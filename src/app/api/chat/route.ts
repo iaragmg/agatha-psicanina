@@ -133,20 +133,32 @@ export async function POST(req: NextRequest) {
   if (session.status !== 'ACTIVE') {
     return Response.json({ error: 'Sessão já encerrada.' }, { status: 409 })
   }
-  // Block only when strictly past the limit — i.e. the user already answered the
-  // last question (diagnosis should have been generated on that turn). Using >=
-  // here was the bug: it blocked the user from answering the MAX_QUESTIONS-th
-  // question, since questionCount is incremented *after* each bot reply.
-  if (session.questionCount > SESSION_CONFIG.MAX_QUESTIONS) {
-    console.warn(
-      `[/api/chat] Sessão ${sessionId} bloqueada: questionCount=${session.questionCount} > MAX=${SESSION_CONFIG.MAX_QUESTIONS}`,
-    )
-    return Response.json({ error: 'Limite de perguntas atingido.' }, { status: 422 })
-  }
 
   console.log(
     `[/api/chat] sessionId=${sessionId} questionCount=${session.questionCount} MAX=${SESSION_CONFIG.MAX_QUESTIONS}`,
   )
+
+  // Quando questionCount ultrapassa o limite verificamos se já existe diagnóstico.
+  // Se existir → bloqueamos (sessão deveria ter sido marcada COMPLETED).
+  // Se NÃO existir → geração anterior falhou; deixamos passar com isForcedClose=true
+  // para tentar novamente em vez de prender o usuário para sempre.
+  if (session.questionCount > SESSION_CONFIG.MAX_QUESTIONS) {
+    const existingDiagnosis = await prisma.diagnosis.findFirst({
+      where: { sessionId },
+      select: { shareToken: true },
+    })
+
+    if (existingDiagnosis) {
+      console.log(`[/api/chat] Existing diagnosis found (shareToken=${existingDiagnosis.shareToken}). Returning question limit message.`)
+      return Response.json({ error: 'Limite de perguntas atingido.' }, { status: 422 })
+    }
+
+    // Diagnóstico ainda não foi salvo — tentativa anterior falhou no parse.
+    console.log(
+      `[/api/chat] MAX reached (questionCount=${session.questionCount}), no diagnosis saved yet — forcing diagnosis generation`,
+    )
+    // Continua com isForcedClose=true abaixo.
+  }
 
   // 3. Detecção de conteúdo sensível
   const flaggedSensitive = isSensitive(content)
@@ -304,7 +316,7 @@ export async function POST(req: NextRequest) {
           })
 
           savedShareToken = saved.shareToken
-          console.log(`[/api/chat] Diagnóstico salvo: shareToken=${savedShareToken}`)
+          console.log(`[/api/chat] Diagnosis persisted: shareToken=${savedShareToken}`)
         } catch (dbErr) {
           console.error('[/api/chat] Erro na transação de diagnóstico:', dbErr)
         }
