@@ -54,14 +54,31 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ## Variáveis de ambiente
 
-| Variável | Descrição | Exemplo |
-|---|---|---|
-| `DATABASE_URL` | String de conexão PostgreSQL | `postgresql://user:pass@localhost:5432/agatha` |
-| `ANTHROPIC_API_KEY` | Chave da Claude API | `sk-ant-...` |
-| `NEXT_PUBLIC_APP_URL` | URL pública do app | `http://localhost:3000` |
-| `NEXT_PUBLIC_APP_NAME` | Nome do app (client-side) | `Agatha PsiCanina` |
+| Variável | Obrigatória | Descrição | Exemplo |
+|---|:---:|---|---|
+| `DATABASE_URL` | ✅ | String de conexão PostgreSQL | `postgresql://user:pass@localhost:5432/agatha` |
+| `OPENAI_API_KEY` | ✅ | Chave da OpenAI API (server-only, nunca use `NEXT_PUBLIC_`) | `sk-...` |
+| `AUTH_SECRET` | ✅ | Segredo do NextAuth (gere com `openssl rand -base64 32`) | `abc123...` |
+| `AUTH_URL` | ✅ | URL base do app (usada pelo NextAuth) | `http://localhost:3000` |
+| `RATE_LIMIT_MAX` | — | Máximo de requisições por janela por IP (padrão: `20`) | `30` |
+| `RATE_LIMIT_WINDOW_MS` | — | Duração da janela de rate limit em ms (padrão: `60000`) | `60000` |
+| `NEXT_PUBLIC_APP_URL` | — | URL pública do app (client-side) | `http://localhost:3000` |
+| `NEXT_PUBLIC_APP_NAME` | — | Nome do app (client-side) | `Agatha PsiCanina` |
 
 > **Nunca** comite `.env.local`. Ele está no `.gitignore`. Use `.env.example` como template.
+
+### Rate limiting
+
+A rota `/api/chat` aplica um limite deslizante por IP. Com os padrões (`RATE_LIMIT_MAX=20`, `RATE_LIMIT_WINDOW_MS=60000`), cada IP pode fazer **20 requisições por minuto**. Quando excedido, a API retorna `HTTP 429` com os headers:
+
+```
+Retry-After: <segundos até o reset>
+X-RateLimit-Limit: 20
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: <unix timestamp>
+```
+
+O limitador é in-memory (adequado para instância única / Vercel). Para ambientes multi-instância, substitua o `Map` em `src/lib/rate-limit.ts` por Redis (ex.: `@upstash/ratelimit`).
 
 ---
 

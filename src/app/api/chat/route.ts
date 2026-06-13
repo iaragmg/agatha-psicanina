@@ -6,6 +6,7 @@ import { AGATHA_SYSTEM_PROMPT } from '@/lib/agatha-prompt'
 import { SENSITIVE_REDIRECT, SESSION_CONFIG } from '@/lib/constants'
 import { createMessageSchema } from '@/lib/validations/session'
 import { diagnosisJsonSchema, type DiagnosisJson } from '@/lib/validations/diagnosis'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 // ─── Detecção de conteúdo sensível ───────────────────────────────────────────
 
@@ -46,7 +47,26 @@ function sseChunk(payload: Record<string, unknown>): Uint8Array {
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // 1. Parse e validação do body
+  // 1. Rate limiting — verificado antes de qualquer I/O
+  const ip = getClientIp(req.headers)
+  const rl = checkRateLimit(ip)
+
+  if (!rl.success) {
+    return Response.json(
+      { error: 'Muitas requisições. Aguarde um momento antes de tentar novamente.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rl.retryAfter),
+          'X-RateLimit-Limit': process.env.RATE_LIMIT_MAX ?? '20',
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(Math.ceil(rl.resetAt / 1000)),
+        },
+      },
+    )
+  }
+
+  // 2. Parse e validação do body
   let body: unknown
   try {
     body = await req.json()
