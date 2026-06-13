@@ -102,9 +102,20 @@ export async function POST(req: NextRequest) {
   if (session.status !== 'ACTIVE') {
     return Response.json({ error: 'Sessão já encerrada.' }, { status: 409 })
   }
-  if (session.questionCount >= SESSION_CONFIG.MAX_QUESTIONS) {
+  // Block only when strictly past the limit — i.e. the user already answered the
+  // last question (diagnosis should have been generated on that turn). Using >=
+  // here was the bug: it blocked the user from answering the MAX_QUESTIONS-th
+  // question, since questionCount is incremented *after* each bot reply.
+  if (session.questionCount > SESSION_CONFIG.MAX_QUESTIONS) {
+    console.warn(
+      `[/api/chat] Sessão ${sessionId} bloqueada: questionCount=${session.questionCount} > MAX=${SESSION_CONFIG.MAX_QUESTIONS}`,
+    )
     return Response.json({ error: 'Limite de perguntas atingido.' }, { status: 422 })
   }
+
+  console.log(
+    `[/api/chat] sessionId=${sessionId} questionCount=${session.questionCount} MAX=${SESSION_CONFIG.MAX_QUESTIONS}`,
+  )
 
   // 3. Detecção de conteúdo sensível
   const flaggedSensitive = isSensitive(content)
@@ -145,9 +156,30 @@ export async function POST(req: NextRequest) {
   ]
 
   // 7. Calcular se esta será a resposta de encerramento
-  // questionCount já inclui a pergunta atual após o increment no passo 10
+  // questionCount = número de respostas do bot já entregues.
+  // nextQuestionCount = como ficará após este turno ser concluído.
   const nextQuestionCount = session.questionCount + 1
+
+  // isClosingTurn: modelo PODE gerar diagnóstico (MIN atingido)
   const isClosingTurn = nextQuestionCount >= SESSION_CONFIG.MIN_QUESTIONS
+
+  // isForcedClose: modelo DEVE gerar diagnóstico (MAX atingido neste turno)
+  const isForcedClose = session.questionCount >= SESSION_CONFIG.MAX_QUESTIONS
+
+  if (isClosingTurn) {
+    console.log(
+      `[/api/chat] Turno de encerramento: questionCount=${session.questionCount} nextQuestionCount=${nextQuestionCount} isForcedClose=${isForcedClose}`,
+    )
+  }
+
+  // Quando forçado, sobrescreve as instruções para garantir que o modelo
+  // emita APENAS o JSON de diagnóstico, sem fazer mais perguntas.
+  const instructions = isForcedClose
+    ? `${AGATHA_SYSTEM_PROMPT}\n\n` +
+      `⚠️ LIMITE ATINGIDO: o limite de ${SESSION_CONFIG.MAX_QUESTIONS} perguntas foi atingido. ` +
+      `Você DEVE encerrar a entrevista AGORA e responder APENAS com o JSON de diagnóstico final. ` +
+      `Nenhuma pergunta adicional. Nenhum texto fora do JSON.`
+    : AGATHA_SYSTEM_PROMPT
 
   // 8. Streaming via OpenAI Responses API
   const stream = new ReadableStream({
@@ -160,7 +192,7 @@ export async function POST(req: NextRequest) {
 
         const response = await openai.responses.create({
           model: 'gpt-4o-mini',
-          instructions: AGATHA_SYSTEM_PROMPT,
+          instructions,
           input,
           max_output_tokens: isClosingTurn
             ? SESSION_CONFIG.MAX_TOKENS_PER_TURN * 2   // diagnóstico precisa de mais tokens
@@ -196,9 +228,20 @@ export async function POST(req: NextRequest) {
       const diagnosisData = parseDiagnosisJson(fullReply)
       const isDiagnosis = diagnosisData !== null
 
+      console.log(
+        `[/api/chat] Resposta recebida: isDiagnosis=${isDiagnosis} isForcedClose=${isForcedClose} length=${fullReply.length}`,
+      )
+
+      if (isForcedClose && !isDiagnosis) {
+        console.error(
+          `[/api/chat] ATENÇÃO: turno forçado mas modelo não gerou diagnóstico válido. Resposta: ${fullReply.slice(0, 200)}`,
+        )
+      }
+
       let savedShareToken: string | null = null
 
       if (isDiagnosis && diagnosisData) {
+        console.log(`[/api/chat] Iniciando persistência do diagnóstico para sessionId=${sessionId}`)
         try {
           // Diagnóstico + encerramento de sessão em transação atômica:
           // se qualquer operação falhar, nenhuma é persistida.
@@ -228,6 +271,7 @@ export async function POST(req: NextRequest) {
           })
 
           savedShareToken = saved.shareToken
+          console.log(`[/api/chat] Diagnóstico salvo: shareToken=${savedShareToken}`)
         } catch (dbErr) {
           console.error('[/api/chat] Erro na transação de diagnóstico:', dbErr)
         }
