@@ -200,30 +200,36 @@ export async function POST(req: NextRequest) {
 
       if (isDiagnosis && diagnosisData) {
         try {
-          const saved = await prisma.diagnosis.create({
-            data: {
-              sessionId,
-              title: diagnosisData.diagnostico,
-              description: diagnosisData.resumoAfetivo,
-              prescription: diagnosisData.prescricao,
-              archetypeTags: diagnosisData.sintomas,
-              arquetipoCanino: diagnosisData.arquetipoCanino,
-              nivelDrama: diagnosisData.nivelDrama,
-              sintomas: diagnosisData.sintomas,
-              fraseCompartilhavel: diagnosisData.fraseCompartilhavel,
-              resumoAfetivo: diagnosisData.resumoAfetivo,
-            },
-            select: { shareToken: true },
+          // Diagnóstico + encerramento de sessão em transação atômica:
+          // se qualquer operação falhar, nenhuma é persistida.
+          const saved = await prisma.$transaction(async (tx) => {
+            const diagnosis = await tx.diagnosis.create({
+              data: {
+                sessionId,
+                title: diagnosisData.diagnostico,
+                description: diagnosisData.resumoAfetivo,
+                prescription: diagnosisData.prescricao,
+                archetypeTags: diagnosisData.sintomas,
+                arquetipoCanino: diagnosisData.arquetipoCanino,
+                nivelDrama: diagnosisData.nivelDrama,
+                sintomas: diagnosisData.sintomas,
+                fraseCompartilhavel: diagnosisData.fraseCompartilhavel,
+                resumoAfetivo: diagnosisData.resumoAfetivo,
+              },
+              select: { shareToken: true },
+            })
+
+            await tx.session.update({
+              where: { id: sessionId },
+              data: { status: 'COMPLETED', endedAt: new Date() },
+            })
+
+            return diagnosis
           })
 
           savedShareToken = saved.shareToken
-
-          await prisma.session.update({
-            where: { id: sessionId },
-            data: { status: 'COMPLETED', endedAt: new Date() },
-          })
         } catch (dbErr) {
-          console.error('[/api/chat] Erro ao persistir diagnóstico:', dbErr)
+          console.error('[/api/chat] Erro na transação de diagnóstico:', dbErr)
         }
       }
 
