@@ -23,17 +23,48 @@ function isSensitive(text: string): boolean {
 // ─── Parse defensivo do JSON de diagnóstico ──────────────────────────────────
 
 function parseDiagnosisJson(raw: string): DiagnosisJson | null {
-  // A Agatha pode envolver o JSON em texto introdutório — tentamos extrair só o objeto
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) return null
+  console.log('[parseDiagnosis] Resposta bruta OpenAI (600 chars):', raw.slice(0, 600))
 
-  try {
-    const json = JSON.parse(match[0])
-    const result = diagnosisJsonSchema.safeParse(json)
-    return result.success ? result.data : null
-  } catch {
+  // 1. Strip markdown code fences (```json ... ``` ou ``` ... ```)
+  const stripped = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim()
+
+  if (stripped !== raw.trim()) {
+    console.log('[parseDiagnosis] Markdown fence removido. Após strip:', stripped.slice(0, 300))
+  }
+
+  // 2. Extrair o objeto JSON: do primeiro { ao último }
+  const match = stripped.match(/\{[\s\S]*\}/)
+  if (!match) {
+    console.error('[parseDiagnosis] Nenhum bloco JSON encontrado. Raw completo:', raw)
     return null
   }
+
+  // 3. JSON.parse
+  let json: unknown
+  try {
+    json = JSON.parse(match[0])
+    console.log('[parseDiagnosis] JSON parseado:', JSON.stringify(json).slice(0, 600))
+  } catch (err) {
+    console.error('[parseDiagnosis] JSON.parse falhou:', err, '\nBloco:', match[0].slice(0, 400))
+    return null
+  }
+
+  // 4. Validação Zod
+  const result = diagnosisJsonSchema.safeParse(json)
+  if (!result.success) {
+    console.error('[parseDiagnosis] Zod falhou:',      JSON.stringify(result.error.issues, null, 2))
+    console.error('[parseDiagnosis] JSON recebido:',   JSON.stringify(json, null, 2))
+    console.error('[parseDiagnosis] Schema esperado:',
+      'tipo("diagnostico") | diagnostico | arquetipoCanino | nivelDrama(int 1-10) |',
+      'sintomas(string[]) | prescricao | fraseCompartilhavel | resumoAfetivo')
+    return null
+  }
+
+  console.log('[parseDiagnosis] Válido — diagnostico:', result.data.diagnostico.slice(0, 60))
+  return result.data
 }
 
 // ─── Helpers de SSE ──────────────────────────────────────────────────────────
@@ -176,9 +207,11 @@ export async function POST(req: NextRequest) {
   // emita APENAS o JSON de diagnóstico, sem fazer mais perguntas.
   const instructions = isForcedClose
     ? `${AGATHA_SYSTEM_PROMPT}\n\n` +
-      `⚠️ LIMITE ATINGIDO: o limite de ${SESSION_CONFIG.MAX_QUESTIONS} perguntas foi atingido. ` +
-      `Você DEVE encerrar a entrevista AGORA e responder APENAS com o JSON de diagnóstico final. ` +
-      `Nenhuma pergunta adicional. Nenhum texto fora do JSON.`
+      `⚠️ INSTRUÇÃO OBRIGATÓRIA: O limite de ${SESSION_CONFIG.MAX_QUESTIONS} perguntas foi atingido. ` +
+      `Você DEVE encerrar a entrevista AGORA. ` +
+      `Responda SOMENTE com o objeto JSON de diagnóstico final. ` +
+      `NÃO use markdown. NÃO use \`\`\`json. NÃO adicione texto antes ou depois. ` +
+      `Comece a resposta com { e termine com }.`
     : AGATHA_SYSTEM_PROMPT
 
   // 8. Streaming via OpenAI Responses API
