@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// AUTH — tabelas exigidas pelo NextAuth v5
+// ─────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─────────────────────────────────────────
+// USUÁRIO (operador/admin da plataforma)
+// ─────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  image         String?
+  role          UserRole  @default(USER)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  // Sessões NextAuth (tabela separada de Session do chat)
+  authSessions AuthSession[]
+  // Pacientes cadastrados por este usuário
+  patients     Patient[]
+
+  @@map("users")
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
+// ─────────────────────────────────────────
+// PATIENT (usuário final que faz a consulta)
+// ─────────────────────────────────────────
+
+model Patient {
+  id          String    @id @default(cuid())
+  nickname    String
+  anonymousId String    @unique
+  // Dados opcionais — só preenchidos se o paciente escolher
+  email       String?
+  ageRange    AgeRange?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Operador que vinculou este paciente (opcional para uso B2B)
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  sessions Session[]
+
+  @@map("patients")
+}
+
+// ─────────────────────────────────────────
+// SESSION (conversa com a Agatha)
+// ─────────────────────────────────────────
+
+model Session {
+  id            String        @id @default(cuid())
+  patientId     String
+  status        SessionStatus @default(ACTIVE)
+  questionCount Int           @default(0)
+  locale        String        @default("pt-BR")
+  startedAt     DateTime      @default(now())
+  endedAt       DateTime?
+
+  patient   Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  diagnosis Diagnosis?
+
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────
+// MESSAGE (turno individual do chat)
+// ─────────────────────────────────────────
+
+model Message {
+  id               String      @id @default(cuid())
+  sessionId        String
+  turnNumber       Int
+  role             MessageRole
+  content          String      @db.Text
+  flaggedSensitive Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, turnNumber])
+  @@map("messages")
+}
+
+// ─────────────────────────────────────────
+// DIAGNOSIS (resultado final da sessão)
+// ─────────────────────────────────────────
+
+model Diagnosis {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  title         String
+  description   String   @db.Text
+  prescription  String   @db.Text
+  archetypeTags String[]
+  shareToken    String   @unique @default(cuid())
+  cardImageUrl  String?
+  createdAt     DateTime @default(now())
+
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  shareEvents ShareEvent[]
+
+  @@map("diagnoses")
+}
+
+// ─────────────────────────────────────────
+// SHARE EVENT (rastreio de compartilhamentos)
+// ─────────────────────────────────────────
+
+model ShareEvent {
+  id          String       @id @default(cuid())
+  diagnosisId String
+  channel     ShareChannel
+  createdAt   DateTime     @default(now())
+
+  diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+
+  @@map("share_events")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum MessageRole {
+  bot
+  user
+}
+
+enum ShareChannel {
+  whatsapp
+  instagram
+  copy
+}
+
+enum AgeRange {
+  UNDER_18
+  AGE_18_24
+  AGE_25_34
+  AGE_35_44
+  AGE_45_54
+  AGE_55_PLUS
+}

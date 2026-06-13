@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐾 Agatha PsiCanina — Consultório Interativo
 
-## Getting Started
+> Uma Shih Tzu preta e branca, de óculos redondos e gravata borboleta, que analisa humanos com humor, carinho e inteligência. **Entretenimento — não é psicologia real.**
 
-First, run the development server:
+---
+
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Linguagem | TypeScript |
+| Estilo | Tailwind CSS + Glassmorphism |
+| ORM | Prisma |
+| Banco | PostgreSQL |
+| AI | Claude API (Anthropic) |
+| Deploy | Vercel (recomendado) |
+
+---
+
+## Pré-requisitos
+
+- Node.js 18+
+- PostgreSQL 14+ rodando localmente (ou instância na nuvem)
+- Chave de API da Anthropic
+
+---
+
+## Setup rápido
 
 ```bash
+# 1. Clone e instale dependências
+git clone <repo>
+cd agatha-psicanina
+npm install
+
+# 2. Configure as variáveis de ambiente
+cp .env.example .env.local
+# Edite .env.local com seus valores reais
+
+# 3. Crie o banco e rode as migrations
+npx prisma migrate dev --name init
+
+# 4. (Opcional) Abra o Prisma Studio
+npx prisma studio
+
+# 5. Rode em desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variáveis de ambiente
 
-## Learn More
+| Variável | Descrição | Exemplo |
+|---|---|---|
+| `DATABASE_URL` | String de conexão PostgreSQL | `postgresql://user:pass@localhost:5432/agatha` |
+| `ANTHROPIC_API_KEY` | Chave da Claude API | `sk-ant-...` |
+| `NEXT_PUBLIC_APP_URL` | URL pública do app | `http://localhost:3000` |
+| `NEXT_PUBLIC_APP_NAME` | Nome do app (client-side) | `Agatha PsiCanina` |
 
-To learn more about Next.js, take a look at the following resources:
+> **Nunca** comite `.env.local`. Ele está no `.gitignore`. Use `.env.example` como template.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estrutura de pastas
 
-## Deploy on Vercel
+```
+agatha-psicanina/
+├── prisma/
+│   ├── schema.prisma        # Modelo de dados (Session, Turn, Diagnosis, ShareEvent)
+│   └── migrations/          # Gerado pelo Prisma
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx       # Layout base com metadados e fonte
+│   │   ├── page.tsx         # Splash / tela inicial
+│   │   └── globals.css      # Tokens de design + glassmorphism
+│   ├── lib/
+│   │   ├── prisma.ts        # Singleton do PrismaClient
+│   │   └── constants.ts     # Configurações de sessão, CVV, bordões
+│   └── types/
+│       └── index.ts         # Tipos TypeScript compartilhados
+├── .env.example             # Template de variáveis (seguro para commitar)
+├── .env.local               # Variáveis reais (NÃO commitar)
+└── README.md
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Banco de dados
+
+```bash
+# Criar / atualizar schema
+npx prisma migrate dev --name <nome_da_migration>
+
+# Sincronizar sem migration (dev rápido)
+npx prisma db push
+
+# Visualizar dados
+npx prisma studio
+
+# Regenerar o client após mudanças no schema
+npx prisma generate
+```
+
+---
+
+## Regras de negócio importantes
+
+- **Disclaimer obrigatório** antes de qualquer interação
+- **Conteúdo grave** (crise, suicídio) → Agatha redireciona para CVV **188**
+- Agatha nunca usa termos clínicos reais como diagnóstico definitivo
+- Sessão: mínimo **5**, máximo **8** perguntas
+- Logs não armazenam dados pessoais identificáveis (LGPD)
+
+---
+
+## Scripts disponíveis
+
+```bash
+npm run dev          # Servidor de desenvolvimento
+npm run build        # Build de produção
+npm run start        # Servidor de produção
+npm run lint         # ESLint
+npx prisma studio    # Interface visual do banco
+```
+
+---
+
+*"Os humanos são fascinantes." — Agatha PsiCanina* 🐾
