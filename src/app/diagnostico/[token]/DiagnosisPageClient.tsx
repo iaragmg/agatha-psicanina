@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { DiagnosisResult } from '@/components/diagnosis/DiagnosisResult'
+import { CertificateModal } from '@/components/certificate/CertificateModal'
 import { useSaveImage } from '@/hooks/useSaveImage'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
 
@@ -31,6 +32,7 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
   const { cardRef, status: saveStatus, saveImage } = useSaveImage()
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const [wpState, setWpState] = useState<'idle' | 'sent'>('idle')
+  const [showCertModal, setShowCertModal] = useState(false)
 
   const pageUrl =
     typeof window !== 'undefined'
@@ -206,6 +208,36 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             {saveLabel}
           </button>
 
+          {/* Certificado */}
+          <div style={{ height: 4 }} />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            margin: '4px 0',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            <span style={{ fontSize: 11, color: 'rgba(240,240,255,0.25)', letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              ou
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+
+          <button
+            className="btn-primary"
+            onClick={() => setShowCertModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', padding: '15px 20px',
+              borderRadius: 16, border: 'none', cursor: 'pointer',
+              fontSize: 15, fontWeight: 700, color: '#0d0b1e',
+              background: 'linear-gradient(135deg, #e8c776 0%, #c9a84c 100%)',
+              boxShadow: '0 4px 24px rgba(201,168,76,0.25)',
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <span style={{ fontSize: 20 }}>📜</span>
+            Gerar Certificado Oficial
+          </button>
+
           {/* Separador + Nova consulta */}
           <div style={{ height: 8 }} />
 
@@ -241,6 +273,15 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
           Não substitui psicologia ou veterinária de verdade.
         </p>
       </div>
+
+      {/* Modal do certificado */}
+      {showCertModal && (
+        <CertificateModal
+          diagnosis={diagnosis}
+          shareToken={shareToken}
+          onClose={() => setShowCertModal(false)}
+        />
+      )}
     </>
   )
 }

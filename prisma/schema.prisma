@@ -161,8 +161,25 @@ model Diagnosis {
 
   session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   shareEvents ShareEvent[]
+  certificate Certificate?
 
   @@map("diagnoses")
+}
+
+// ─────────────────────────────────────────
+// CERTIFICATE (certificado oficial psicanino)
+// ─────────────────────────────────────────
+
+model Certificate {
+  id                String    @id @default(cuid())
+  diagnosisId       String    @unique
+  certificateNumber Int       @default(autoincrement())
+  patientName       String    @default("Paciente Anônimo")
+  createdAt         DateTime  @default(now())
+
+  diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
 }
 
 // ─────────────────────────────────────────
