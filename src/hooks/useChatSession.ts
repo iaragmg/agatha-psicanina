@@ -12,10 +12,13 @@ export interface Message {
 
 export interface DiagnosisPayload {
   tipo: 'diagnostico'
-  titulo: string
-  descricao: string
+  diagnostico: string
+  arquetipoCanino: string
+  nivelDrama: number
+  sintomas: string[]
   prescricao: string
-  tags: string[]
+  fraseCompartilhavel: string
+  resumoAfetivo: string
 }
 
 interface UseChatSessionReturn {
@@ -112,22 +115,14 @@ export function useChatSession(): UseChatSessionReturn {
             if (payload.done) {
               updateLastBotMessage(accumulated, true)
 
-              if (payload.isDiagnosis) {
-                try {
-                  const parsed: DiagnosisPayload = JSON.parse(accumulated.trim())
-                  setDiagnosis(parsed)
-                } catch {
-                  // não era JSON limpo
-                }
+              // O servidor valida e envia o objeto DiagnosisPayload estruturado
+              if (payload.isDiagnosis && payload.diagnosis) {
+                setDiagnosis(payload.diagnosis as DiagnosisPayload)
               }
             }
 
             if (payload.error) {
               updateLastBotMessage('🐾 Desculpe, tive uma falha na minha análise. Tente novamente.', true)
-            }
-
-            if (payload.flagged) {
-              // mensagem já vem como reply na resposta json normal
             }
           } catch {
             // linha malformada — ignora

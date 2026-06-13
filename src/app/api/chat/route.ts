@@ -5,22 +5,34 @@ import { prisma } from '@/lib/prisma'
 import { AGATHA_SYSTEM_PROMPT } from '@/lib/agatha-prompt'
 import { SENSITIVE_REDIRECT, SESSION_CONFIG } from '@/lib/constants'
 import { createMessageSchema } from '@/lib/validations/session'
+import { diagnosisJsonSchema, type DiagnosisJson } from '@/lib/validations/diagnosis'
 
 // ─── Detecção de conteúdo sensível ───────────────────────────────────────────
 
 const SENSITIVE_KEYWORDS = [
-  'suicid',
-  'me matar',
-  'não quero viver',
-  'acabar com tudo',
-  'me machucar',
-  'automutila',
-  'overdose',
+  'suicid', 'me matar', 'não quero viver', 'acabar com tudo',
+  'me machucar', 'automutila', 'overdose',
 ]
 
 function isSensitive(text: string): boolean {
   const lower = text.toLowerCase()
   return SENSITIVE_KEYWORDS.some((kw) => lower.includes(kw))
+}
+
+// ─── Parse defensivo do JSON de diagnóstico ──────────────────────────────────
+
+function parseDiagnosisJson(raw: string): DiagnosisJson | null {
+  // A Agatha pode envolver o JSON em texto introdutório — tentamos extrair só o objeto
+  const match = raw.match(/\{[\s\S]*\}/)
+  if (!match) return null
+
+  try {
+    const json = JSON.parse(match[0])
+    const result = diagnosisJsonSchema.safeParse(json)
+    return result.success ? result.data : null
+  } catch {
+    return null
+  }
 }
 
 // ─── Helpers de SSE ──────────────────────────────────────────────────────────
@@ -74,7 +86,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Limite de perguntas atingido.' }, { status: 422 })
   }
 
-  // 3. Detecção de conteúdo sensível (antes de salvar ou chamar a API)
+  // 3. Detecção de conteúdo sensível
   const flaggedSensitive = isSensitive(content)
 
   // 4. Persistir mensagem do usuário
@@ -100,14 +112,11 @@ export async function POST(req: NextRequest) {
   }
 
   // 6. Montar histórico no formato da Responses API
-  //    Mensagens anteriores (sem a que acabamos de persistir — ainda não tem resposta)
   const history: ResponseInput = session.messages.map((m) => ({
     role: m.role === 'user' ? 'user' : 'assistant',
     content: m.content,
   }))
 
-  // Acrescentar a mensagem atual do usuário
-  // __init__ é o sinal interno para a abertura — o modelo vai se apresentar
   const userContent = content === '__init__' ? 'Olá, Agatha!' : content
 
   const input: ResponseInput = [
@@ -115,7 +124,12 @@ export async function POST(req: NextRequest) {
     { role: 'user', content: userContent },
   ]
 
-  // 7. Streaming via OpenAI Responses API
+  // 7. Calcular se esta será a resposta de encerramento
+  // questionCount já inclui a pergunta atual após o increment no passo 10
+  const nextQuestionCount = session.questionCount + 1
+  const isClosingTurn = nextQuestionCount >= SESSION_CONFIG.MIN_QUESTIONS
+
+  // 8. Streaming via OpenAI Responses API
   const stream = new ReadableStream({
     async start(controller) {
       let fullReply = ''
@@ -128,15 +142,16 @@ export async function POST(req: NextRequest) {
           model: 'gpt-4o-mini',
           instructions: AGATHA_SYSTEM_PROMPT,
           input,
-          max_output_tokens: SESSION_CONFIG.MAX_TOKENS_PER_TURN,
+          max_output_tokens: isClosingTurn
+            ? SESSION_CONFIG.MAX_TOKENS_PER_TURN * 2   // diagnóstico precisa de mais tokens
+            : SESSION_CONFIG.MAX_TOKENS_PER_TURN,
           stream: true,
         })
 
         for await (const event of response) {
           if (event.type === 'response.output_text.delta') {
-            const chunk = event.delta
-            fullReply += chunk
-            controller.enqueue(sseChunk({ chunk }))
+            fullReply += event.delta
+            controller.enqueue(sseChunk({ chunk: event.delta }))
           }
 
           if (event.type === 'response.failed') {
@@ -150,29 +165,34 @@ export async function POST(req: NextRequest) {
         openaiError = message
       }
 
-      // 8. Tratar erro de stream
+      // Tratar erro de stream
       if (openaiError) {
         controller.enqueue(sseChunk({ error: openaiError }))
         controller.close()
         return
       }
 
-      // 9. Detectar se a resposta é o diagnóstico final (JSON da Agatha)
-      let isDiagnosis = false
+      // 9. Tentar parsear diagnóstico final
+      const diagnosisData = parseDiagnosisJson(fullReply)
+      const isDiagnosis = diagnosisData !== null
 
-      try {
-        const maybeJson = JSON.parse(fullReply.trim())
-
-        if (maybeJson.tipo === 'diagnostico') {
-          isDiagnosis = true
-
+      if (isDiagnosis && diagnosisData) {
+        try {
+          // Persistir Diagnosis com todos os campos estruturados
           await prisma.diagnosis.create({
             data: {
               sessionId,
-              title: String(maybeJson.titulo ?? ''),
-              description: String(maybeJson.descricao ?? ''),
-              prescription: String(maybeJson.prescricao ?? ''),
-              archetypeTags: Array.isArray(maybeJson.tags) ? maybeJson.tags.map(String) : [],
+              // Campos legados (mantidos por compatibilidade)
+              title: diagnosisData.diagnostico,
+              description: diagnosisData.resumoAfetivo,
+              prescription: diagnosisData.prescricao,
+              archetypeTags: diagnosisData.sintomas,
+              // Novos campos
+              arquetipoCanino: diagnosisData.arquetipoCanino,
+              nivelDrama: diagnosisData.nivelDrama,
+              sintomas: diagnosisData.sintomas,
+              fraseCompartilhavel: diagnosisData.fraseCompartilhavel,
+              resumoAfetivo: diagnosisData.resumoAfetivo,
             },
           })
 
@@ -180,12 +200,13 @@ export async function POST(req: NextRequest) {
             where: { id: sessionId },
             data: { status: 'COMPLETED', endedAt: new Date() },
           })
+        } catch (dbErr) {
+          console.error('[/api/chat] Erro ao persistir diagnóstico:', dbErr)
+          // Não aborta o stream — o usuário já viu a resposta
         }
-      } catch {
-        // resposta normal — não é JSON
       }
 
-      // 10. Persistir resposta da Agatha + incrementar contador
+      // 10. Persistir mensagem da Agatha + incrementar contador
       await Promise.all([
         prisma.message.create({
           data: {
@@ -201,8 +222,14 @@ export async function POST(req: NextRequest) {
         }),
       ])
 
-      // 11. Sinal de fim de stream
-      controller.enqueue(sseChunk({ done: true, isDiagnosis }))
+      // 11. Sinal de fim — envia o payload do diagnóstico para o cliente
+      controller.enqueue(
+        sseChunk({
+          done: true,
+          isDiagnosis,
+          ...(isDiagnosis && diagnosisData ? { diagnosis: diagnosisData } : {}),
+        }),
+      )
       controller.close()
     },
   })
@@ -212,7 +239,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no', // desativa buffering no nginx/vercel
+      'X-Accel-Buffering': 'no',
     },
   })
 }

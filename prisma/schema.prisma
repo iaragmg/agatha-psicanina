@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -142,15 +141,23 @@ model Message {
 // ─────────────────────────────────────────
 
 model Diagnosis {
-  id            String   @id @default(cuid())
-  sessionId     String   @unique
-  title         String
-  description   String   @db.Text
-  prescription  String   @db.Text
-  archetypeTags String[]
-  shareToken    String   @unique @default(cuid())
-  cardImageUrl  String?
-  createdAt     DateTime @default(now())
+  id                  String   @id @default(cuid())
+  sessionId           String   @unique
+  // Campos originais
+  title               String
+  description         String   @db.Text
+  prescription        String   @db.Text
+  archetypeTags       String[]
+  // Novos campos estruturados
+  arquetipoCanino     String   @default("")
+  nivelDrama          Int      @default(5) // 1–10
+  sintomas            String[] @default([])
+  fraseCompartilhavel String   @default("") @db.Text
+  resumoAfetivo       String   @default("") @db.Text
+  // Meta
+  shareToken          String   @unique @default(cuid())
+  cardImageUrl        String?
+  createdAt           DateTime @default(now())
 
   session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   shareEvents ShareEvent[]
