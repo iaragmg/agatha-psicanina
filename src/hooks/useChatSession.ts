@@ -66,7 +66,7 @@ export function useChatSession(): UseChatSessionReturn {
       setIsTyping(true)
       const botId = addMessage({ role: 'bot', content: '', streaming: true })
 
-      const msgRes = await fetch('/api/chat/message', {
+      const msgRes = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: data.sessionId, turnNumber: 1, content: '__init__' }),
@@ -153,7 +153,7 @@ export function useChatSession(): UseChatSessionReturn {
       addMessage({ role: 'bot', content: '', streaming: true })
 
       try {
-        const res = await fetch('/api/chat/message', {
+        const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, turnNumber, content }),
