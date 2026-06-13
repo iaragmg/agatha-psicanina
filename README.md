@@ -8,12 +8,12 @@
 
 | Camada | Tecnologia |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Linguagem | TypeScript |
 | Estilo | Tailwind CSS + Glassmorphism |
 | ORM | Prisma |
 | Banco | PostgreSQL |
-| AI | Claude API (Anthropic) |
+| AI | OpenAI Responses API (`gpt-4o-mini`) |
 | Deploy | Vercel (recomendado) |
 
 ---
@@ -22,7 +22,7 @@
 
 - Node.js 18+
 - PostgreSQL 14+ rodando localmente (ou instância na nuvem)
-- Chave de API da Anthropic
+- Chave de API da OpenAI
 
 ---
 

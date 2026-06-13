@@ -10,28 +10,6 @@
  *   RATE_LIMIT_WINDOW_MS  — window duration in ms   (default: 60000 = 1 min)
  */
 
-const MAX = parseInt(process.env.RATE_LIMIT_MAX ?? '20', 10)
-const WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10)
-
-// Map<ip, timestamp[]>
-const store = new Map<string, number[]>()
-
-// Prune the store every WINDOW_MS to prevent unbounded growth.
-// Only runs on the server (Node.js runtime), safe to call at module level.
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const cutoff = Date.now() - WINDOW_MS
-    for (const [key, timestamps] of store) {
-      const fresh = timestamps.filter((t) => t > cutoff)
-      if (fresh.length === 0) {
-        store.delete(key)
-      } else {
-        store.set(key, fresh)
-      }
-    }
-  }, WINDOW_MS)
-}
-
 export interface RateLimitResult {
   success: boolean
   /** Requests remaining in the current window. */
@@ -42,30 +20,76 @@ export interface RateLimitResult {
   retryAfter: number
 }
 
-export function checkRateLimit(ip: string): RateLimitResult {
-  const now = Date.now()
-  const cutoff = now - WINDOW_MS
+// ─── Factory ─────────────────────────────────────────────────────────────────
+// Exported so tests can create isolated instances with custom max/windowMs
+// without touching process.env or relying on module-level singletons.
 
-  const timestamps = (store.get(ip) ?? []).filter((t) => t > cutoff)
+export function createRateLimiter(max: number, windowMs: number) {
+  const store = new Map<string, number[]>()
 
-  const success = timestamps.length < MAX
-
-  if (success) {
-    timestamps.push(now)
-    store.set(ip, timestamps)
+  // Prune store periodically to prevent unbounded memory growth.
+  let timer: ReturnType<typeof setInterval> | null = null
+  if (typeof setInterval !== 'undefined') {
+    timer = setInterval(() => {
+      const cutoff = Date.now() - windowMs
+      for (const [key, timestamps] of store) {
+        const fresh = timestamps.filter((t) => t > cutoff)
+        if (fresh.length === 0) {
+          store.delete(key)
+        } else {
+          store.set(key, fresh)
+        }
+      }
+    }, windowMs)
+    // Don't block process exit in tests
+    if (timer.unref) timer.unref()
   }
 
-  const oldest = timestamps[0] ?? now
-  const resetAt = oldest + WINDOW_MS
-  const retryAfter = Math.ceil((resetAt - now) / 1000)
+  function check(ip: string): RateLimitResult {
+    const now = Date.now()
+    const cutoff = now - windowMs
 
-  return {
-    success,
-    remaining: Math.max(0, MAX - timestamps.length),
-    resetAt,
-    retryAfter,
+    const timestamps = (store.get(ip) ?? []).filter((t) => t > cutoff)
+
+    const success = timestamps.length < max
+
+    if (success) {
+      timestamps.push(now)
+      store.set(ip, timestamps)
+    }
+
+    const oldest = timestamps[0] ?? now
+    const resetAt = oldest + windowMs
+    const retryAfter = Math.ceil((resetAt - now) / 1000)
+
+    return {
+      success,
+      remaining: Math.max(0, max - timestamps.length),
+      resetAt,
+      retryAfter,
+    }
   }
+
+  /** Frees the cleanup interval. Call in test teardown. */
+  function destroy() {
+    if (timer) clearInterval(timer)
+  }
+
+  return { check, destroy }
 }
+
+// ─── Singleton (app) ─────────────────────────────────────────────────────────
+
+const MAX       = parseInt(process.env.RATE_LIMIT_MAX       ?? '20',    10)
+const WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10)
+
+const _appLimiter = createRateLimiter(MAX, WINDOW_MS)
+
+export function checkRateLimit(ip: string): RateLimitResult {
+  return _appLimiter.check(ip)
+}
+
+// ─── IP extraction ───────────────────────────────────────────────────────────
 
 /** Extract the best available client IP from Next.js request headers. */
 export function getClientIp(headers: Headers): string {
