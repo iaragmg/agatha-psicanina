@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -29,12 +31,13 @@ export default function Home() {
           ajuda, ligue para o CVV:{' '}
           <strong style={{ color: 'var(--text-primary)' }}>188</strong> (24h, gratuito).
         </div>
-        <button
-          className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:opacity-90 active:scale-95 cursor-pointer"
+        <Link
+          href="/chat"
+          className="block w-full py-3 rounded-xl font-semibold text-white text-center transition-all hover:opacity-90 active:scale-95"
           style={{ background: 'var(--accent-blue)' }}
         >
           Iniciar Consulta
-        </button>
+        </Link>
       </div>
     </main>
   )
