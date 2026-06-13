@@ -28,6 +28,7 @@ interface UseChatSessionReturn {
   sessionId: string | null
   turnNumber: number
   diagnosis: DiagnosisPayload | null
+  shareToken: string | null
   initSession: () => Promise<void>
   sendMessage: (content: string) => Promise<void>
 }
@@ -39,6 +40,7 @@ export function useChatSession(): UseChatSessionReturn {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [turnNumber, setTurnNumber] = useState(1)
   const [diagnosis, setDiagnosis] = useState<DiagnosisPayload | null>(null)
+  const [shareToken, setShareToken] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const addMessage = useCallback((msg: Omit<Message, 'id'>) => {
@@ -115,9 +117,9 @@ export function useChatSession(): UseChatSessionReturn {
             if (payload.done) {
               updateLastBotMessage(accumulated, true)
 
-              // O servidor valida e envia o objeto DiagnosisPayload estruturado
               if (payload.isDiagnosis && payload.diagnosis) {
                 setDiagnosis(payload.diagnosis as DiagnosisPayload)
+                if (payload.shareToken) setShareToken(payload.shareToken as string)
               }
             }
 
@@ -174,5 +176,5 @@ export function useChatSession(): UseChatSessionReturn {
     [sessionId, isLoading, turnNumber, addMessage, updateLastBotMessage, readStream],
   )
 
-  return { messages, isLoading, isTyping, sessionId, turnNumber, diagnosis, initSession, sendMessage }
+  return { messages, isLoading, isTyping, sessionId, turnNumber, diagnosis, shareToken, initSession, sendMessage }
 }

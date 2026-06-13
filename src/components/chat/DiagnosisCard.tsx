@@ -1,10 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
 
 interface DiagnosisCardProps {
   diagnosis: DiagnosisPayload
   onRestart: () => void
+  shareToken?: string | null
 }
 
 // Mapeia nivelDrama (1–10) para cor e rótulo
@@ -16,7 +18,7 @@ function dramaLevel(level: number): { color: string; label: string } {
   return { color: '#e74c3c', label: 'Novela das 9' }
 }
 
-export function DiagnosisCard({ diagnosis, onRestart }: DiagnosisCardProps) {
+export function DiagnosisCard({ diagnosis, onRestart, shareToken }: DiagnosisCardProps) {
   const drama = dramaLevel(diagnosis.nivelDrama)
 
   function handleShare() {
@@ -160,21 +162,32 @@ export function DiagnosisCard({ diagnosis, onRestart }: DiagnosisCardProps) {
       </div>
 
       {/* ── Ações ────────────────────────────────────────────────────── */}
-      <div className="px-5 pb-5 flex gap-3">
-        <button
-          onClick={handleShare}
-          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-          style={{ background: 'var(--accent-blue)' }}
-        >
-          📤 Compartilhar frase
-        </button>
-        <button
-          onClick={onRestart}
-          className="py-2.5 px-4 rounded-xl text-sm font-medium transition-all hover:opacity-80 border border-white/10"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          🔄 Nova consulta
-        </button>
+      <div className="px-5 pb-5 flex flex-col gap-2">
+        {shareToken && (
+          <Link
+            href={`/diagnostico/${shareToken}`}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold text-white text-center transition-all hover:opacity-90 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, rgba(74,144,217,0.8), rgba(155,89,182,0.8))' }}
+          >
+            ✨ Ver resultado completo
+          </Link>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={handleShare}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+            style={{ background: 'var(--accent-blue)' }}
+          >
+            📤 Compartilhar frase
+          </button>
+          <button
+            onClick={onRestart}
+            className="py-2.5 px-4 rounded-xl text-sm font-medium transition-all hover:opacity-80 border border-white/10"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            🔄 Nova consulta
+          </button>
+        </div>
       </div>
     </div>
   )

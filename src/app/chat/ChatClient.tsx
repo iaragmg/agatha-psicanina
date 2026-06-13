@@ -18,6 +18,7 @@ export function ChatClient() {
     sessionId,
     turnNumber,
     diagnosis,
+    shareToken,
     initSession,
     sendMessage,
   } = useChatSession()
@@ -84,7 +85,7 @@ export function ChatClient() {
 
         {/* Card de diagnóstico */}
         {diagnosis && (
-          <DiagnosisCard diagnosis={diagnosis} onRestart={handleRestart} />
+          <DiagnosisCard diagnosis={diagnosis} onRestart={handleRestart} shareToken={shareToken} />
         )}
 
         <div ref={bottomRef} />

@@ -176,25 +176,27 @@ export async function POST(req: NextRequest) {
       const diagnosisData = parseDiagnosisJson(fullReply)
       const isDiagnosis = diagnosisData !== null
 
+      let savedShareToken: string | null = null
+
       if (isDiagnosis && diagnosisData) {
         try {
-          // Persistir Diagnosis com todos os campos estruturados
-          await prisma.diagnosis.create({
+          const saved = await prisma.diagnosis.create({
             data: {
               sessionId,
-              // Campos legados (mantidos por compatibilidade)
               title: diagnosisData.diagnostico,
               description: diagnosisData.resumoAfetivo,
               prescription: diagnosisData.prescricao,
               archetypeTags: diagnosisData.sintomas,
-              // Novos campos
               arquetipoCanino: diagnosisData.arquetipoCanino,
               nivelDrama: diagnosisData.nivelDrama,
               sintomas: diagnosisData.sintomas,
               fraseCompartilhavel: diagnosisData.fraseCompartilhavel,
               resumoAfetivo: diagnosisData.resumoAfetivo,
             },
+            select: { shareToken: true },
           })
+
+          savedShareToken = saved.shareToken
 
           await prisma.session.update({
             where: { id: sessionId },
@@ -202,7 +204,6 @@ export async function POST(req: NextRequest) {
           })
         } catch (dbErr) {
           console.error('[/api/chat] Erro ao persistir diagnóstico:', dbErr)
-          // Não aborta o stream — o usuário já viu a resposta
         }
       }
 
@@ -227,7 +228,9 @@ export async function POST(req: NextRequest) {
         sseChunk({
           done: true,
           isDiagnosis,
-          ...(isDiagnosis && diagnosisData ? { diagnosis: diagnosisData } : {}),
+          ...(isDiagnosis && diagnosisData
+            ? { diagnosis: diagnosisData, shareToken: savedShareToken }
+            : {}),
         }),
       )
       controller.close()
