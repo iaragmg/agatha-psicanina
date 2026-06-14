@@ -259,6 +259,25 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             <span style={{ fontSize: 16 }}>🔄</span>
             Nova consulta com a Agatha
           </a>
+
+          <a
+            className="btn-ghost"
+            href="/prontuario"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '13px',
+              borderRadius: 14,
+              border: '1px solid rgba(255,255,255,0.06)',
+              color: 'rgba(240,240,255,0.35)',
+              fontSize: 13, fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.18s ease',
+              background: 'transparent',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>📚</span>
+            Meu Prontuário PsiCanino
+          </a>
         </div>
 
         {/* ── Rodapé ────────────────────────────────────────────────── */}

@@ -9,6 +9,8 @@ interface Props {
   diagnosis: DiagnosisPayload
   shareToken: string
   onClose: () => void
+  /** Quando fornecido, pula a fase de nome e exibe o certificado diretamente */
+  initialCertificateData?: CertificateData
 }
 
 type Phase = 'name-input' | 'loading' | 'certificate'
@@ -35,10 +37,10 @@ function buildShareText(data: CertificateData, url: string): string {
   )
 }
 
-export function CertificateModal({ diagnosis, shareToken, onClose }: Props) {
-  const [phase, setPhase] = useState<Phase>('name-input')
+export function CertificateModal({ diagnosis, shareToken, onClose, initialCertificateData }: Props) {
+  const [phase, setPhase] = useState<Phase>(initialCertificateData ? 'certificate' : 'name-input')
   const [name, setName] = useState('')
-  const [certData, setCertData] = useState<CertificateData | null>(null)
+  const [certData, setCertData] = useState<CertificateData | null>(initialCertificateData ?? null)
   const [error, setError] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<CopyState>('idle')
   const [saveState, setSaveState] = useState<SaveState>('idle')

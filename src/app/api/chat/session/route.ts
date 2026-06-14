@@ -14,7 +14,18 @@ export async function POST() {
       data: { patientId: patient.id, status: 'ACTIVE' },
     })
 
-    return NextResponse.json({ sessionId: session.id, anonymousId })
+    const response = NextResponse.json({ sessionId: session.id, anonymousId })
+
+    // Persiste a identidade anônima do paciente por 1 ano.
+    // Usado pela página /prontuario para listar o histórico de consultas.
+    response.cookies.set('agatha_patient_id', anonymousId, {
+      maxAge: 60 * 60 * 24 * 365,
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: false, // legível pelo JS do cliente também
+    })
+
+    return response
   } catch (err) {
     console.error('[POST /api/chat/session]', err)
     return NextResponse.json({ error: 'Erro ao criar sessão' }, { status: 500 })
