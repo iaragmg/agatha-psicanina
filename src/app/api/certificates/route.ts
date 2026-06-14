@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { generateIndicators } from '@/lib/certificate-indicators'
 
 const bodySchema = z.object({
   shareToken: z.string().min(1),
@@ -22,40 +23,87 @@ export async function POST(req: NextRequest) {
 
   const { shareToken, patientName } = parsed.data
 
+  // Carrega diagnóstico com todos os campos necessários para os indicadores
   const diagnosis = await prisma.diagnosis.findUnique({
     where: { shareToken },
-    select: { id: true, certificate: true },
+    select: {
+      id: true,
+      nivelDrama: true,
+      arquetipoCanino: true,
+      title: true,
+      prescription: true,
+      resumoAfetivo: true,
+      certificate: true,
+    },
   })
 
   if (!diagnosis) {
     return Response.json({ error: 'Diagnóstico não encontrado.' }, { status: 404 })
   }
 
-  // Reutiliza certificado existente para este diagnóstico
+  // ── Certificado já existe ───────────────────────────────────────────────────
   if (diagnosis.certificate) {
-    return Response.json({
-      certificateNumber: formatCertNumber(
-        diagnosis.certificate.certificateNumber,
-        diagnosis.certificate.createdAt,
-      ),
-      patientName: diagnosis.certificate.patientName,
-      createdAt: diagnosis.certificate.createdAt.toISOString(),
-    })
+    const cert = diagnosis.certificate
+
+    // Retrocompatibilidade: certificados antigos têm indicadores = 0 → gerar e persistir
+    if (cert.compatibilidadePaoQueijo === 0) {
+      const indicators = generateIndicators(
+        diagnosis.id,
+        diagnosis.nivelDrama,
+        diagnosis.arquetipoCanino,
+        diagnosis.title,
+        diagnosis.prescription,
+        diagnosis.resumoAfetivo,
+      )
+
+      const updated = await prisma.certificate.update({
+        where: { id: cert.id },
+        data: indicators,
+      })
+
+      return Response.json(buildResponse(updated))
+    }
+
+    return Response.json(buildResponse(cert))
   }
 
-  // Cria novo certificado
+  // ── Novo certificado ────────────────────────────────────────────────────────
+  const indicators = generateIndicators(
+    diagnosis.id,
+    diagnosis.nivelDrama,
+    diagnosis.arquetipoCanino,
+    diagnosis.title,
+    diagnosis.prescription,
+    diagnosis.resumoAfetivo,
+  )
+
   const cert = await prisma.certificate.create({
-    data: { diagnosisId: diagnosis.id, patientName },
+    data: { diagnosisId: diagnosis.id, patientName, ...indicators },
   })
 
-  return Response.json({
-    certificateNumber: formatCertNumber(cert.certificateNumber, cert.createdAt),
-    patientName: cert.patientName,
-    createdAt: cert.createdAt.toISOString(),
-  })
+  return Response.json(buildResponse(cert))
 }
 
 function formatCertNumber(n: number, date: Date): string {
-  const year = date.getFullYear()
-  return `PSC-${year}-${String(n).padStart(6, '0')}`
+  return `PSC-${date.getFullYear()}-${String(n).padStart(6, '0')}`
+}
+
+function buildResponse(cert: {
+  certificateNumber: number
+  patientName: string
+  createdAt: Date
+  rarity: string
+  compatibilidadePaoQueijo: number
+  chanceEstudarMadrugada: number
+  riscoAdotarOutroCachorro: number
+}) {
+  return {
+    certificateNumber: formatCertNumber(cert.certificateNumber, cert.createdAt),
+    patientName: cert.patientName,
+    createdAt: cert.createdAt.toISOString(),
+    rarity: cert.rarity,
+    compatibilidadePaoQueijo: cert.compatibilidadePaoQueijo,
+    chanceEstudarMadrugada: cert.chanceEstudarMadrugada,
+    riscoAdotarOutroCachorro: cert.riscoAdotarOutroCachorro,
+  }
 }

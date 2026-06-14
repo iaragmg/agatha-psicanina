@@ -171,11 +171,16 @@ model Diagnosis {
 // ─────────────────────────────────────────
 
 model Certificate {
-  id                String    @id @default(cuid())
-  diagnosisId       String    @unique
-  certificateNumber Int       @default(autoincrement())
-  patientName       String    @default("Paciente Anônimo")
-  createdAt         DateTime  @default(now())
+  id                       String   @id @default(cuid())
+  diagnosisId              String   @unique
+  certificateNumber        Int      @default(autoincrement())
+  patientName              String   @default("Paciente Anônimo")
+  // Indicadores psi-caninos (gerados uma vez, persistidos)
+  rarity                   String   @default("COMUM")
+  compatibilidadePaoQueijo Int      @default(0)
+  chanceEstudarMadrugada   Int      @default(0)
+  riscoAdotarOutroCachorro Int      @default(0)
+  createdAt                DateTime @default(now())
 
   diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
 

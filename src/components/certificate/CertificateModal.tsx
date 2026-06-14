@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { CertificateCard, type CertificateData } from './CertificateCard'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
+import { RARITY_META, type Rarity } from '@/lib/certificate-indicators'
 
 interface Props {
   diagnosis: DiagnosisPayload
@@ -15,16 +16,22 @@ type CopyState = 'idle' | 'copied'
 type SaveState = 'idle' | 'capturing' | 'done' | 'error'
 
 function buildShareText(data: CertificateData, url: string): string {
+  const rm = RARITY_META[data.rarity] ?? RARITY_META.COMUM
+  const rarityStars = '⭐'.repeat(rm.stars)
+
   return (
     `🏅 *CERTIFICADO OFICIAL PSI-CANINO* 🐾\n\n` +
-    `Certifico que *${data.patientName}* foi diagnosticado(a) como:\n\n` +
-    `🐾 ${data.diagnosis.arquetipoCanino}\n` +
-    `🎭 Nível de Drama: ${data.diagnosis.nivelDrama}/10\n\n` +
+    `Paciente: *${data.patientName}*\n` +
+    `Arquétipo: ${data.diagnosis.arquetipoCanino}\n` +
+    `Raridade: ${rarityStars} ${rm.label}\n\n` +
+    `🥐 Compatibilidade com pão de queijo: ${data.compatibilidadePaoQueijo}%\n` +
+    `📚 Chance de estudar até tarde: ${data.chanceEstudarMadrugada}%\n` +
+    `🐶 Risco de adotar outro cachorro: ${data.riscoAdotarOutroCachorro}%\n\n` +
     `💬 _"${data.diagnosis.fraseCompartilhavel}"_\n\n` +
     `📋 Prontuário: #${data.certificateNumber}\n` +
-    `📅 Emitido em: ${new Date(data.createdAt).toLocaleDateString('pt-BR')}\n\n` +
+    `📅 ${new Date(data.createdAt).toLocaleDateString('pt-BR')}\n\n` +
     `Ver diagnóstico completo: ${url}\n\n` +
-    `_Assinado: Dra. Agatha PsiCanina — Validade emocional indeterminada 🐾_`
+    `_Emitido pela Dra. Agatha PsiCanina — Validade emocional indeterminada 🐾_`
   )
 }
 
@@ -65,6 +72,10 @@ export function CertificateModal({ diagnosis, shareToken, onClose }: Props) {
         patientName: data.patientName,
         certificateNumber: data.certificateNumber,
         createdAt: data.createdAt,
+        rarity: (data.rarity ?? 'COMUM') as Rarity,
+        compatibilidadePaoQueijo: data.compatibilidadePaoQueijo ?? 70,
+        chanceEstudarMadrugada:   data.chanceEstudarMadrugada   ?? 50,
+        riscoAdotarOutroCachorro: data.riscoAdotarOutroCachorro  ?? 30,
       })
       setPhase('certificate')
     } catch (err) {
