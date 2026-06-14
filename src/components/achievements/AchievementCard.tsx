@@ -2,13 +2,27 @@
 
 import type { Achievement } from '@/lib/achievements'
 
+const PRESTIGE_LABEL: Record<number, string> = {
+  1: 'Comum', 2: 'Comum', 3: 'Incomum',
+  4: 'Incomum', 5: 'Raro', 6: 'Raro',
+  7: 'Épico', 8: 'Épico', 9: 'Lendário', 10: 'Lendário',
+}
+const PRESTIGE_COLOR: Record<number, string> = {
+  1: 'rgba(160,160,180,0.55)', 2: 'rgba(160,160,180,0.55)', 3: 'rgba(100,200,120,0.65)',
+  4: 'rgba(100,200,120,0.65)', 5: 'rgba(74,144,217,0.7)', 6: 'rgba(74,144,217,0.7)',
+  7: 'rgba(155,89,182,0.8)', 8: 'rgba(155,89,182,0.8)', 9: '#e8c776', 10: '#e8c776',
+}
+
 interface Props {
   achievement: Achievement
   isUnlocked: boolean
 }
 
 export function AchievementCard({ achievement, isUnlocked }: Props) {
-  const { emoji, title, description, unlockHint } = achievement
+  const { emoji, title, description, lockedHint, prestige, secret } = achievement
+
+  const prestigeLabel = PRESTIGE_LABEL[prestige] ?? 'Comum'
+  const prestigeColor = PRESTIGE_COLOR[prestige] ?? 'rgba(160,160,180,0.55)'
 
   if (isUnlocked) {
     return (
@@ -33,7 +47,7 @@ export function AchievementCard({ achievement, isUnlocked }: Props) {
           boxShadow: '0 0 6px rgba(232,199,118,0.8)',
         }} />
 
-        {/* Emoji + fundo selado */}
+        {/* Emoji */}
         <div style={{
           width: 48, height: 48, borderRadius: '50%',
           background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(155,89,182,0.12))',
@@ -49,9 +63,15 @@ export function AchievementCard({ achievement, isUnlocked }: Props) {
           <p style={{ fontSize: 12, fontWeight: 700, color: '#e8c776', margin: '0 0 3px', lineHeight: 1.3 }}>
             {title}
           </p>
-          <p style={{ fontSize: 10, color: 'rgba(240,240,255,0.5)', margin: 0, lineHeight: 1.4 }}>
+          <p style={{ fontSize: 10, color: 'rgba(240,240,255,0.5)', margin: '0 0 5px', lineHeight: 1.4 }}>
             {description}
           </p>
+          <span style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: prestigeColor,
+          }}>
+            {prestigeLabel}
+          </span>
         </div>
 
         {/* Carimbo "OBTIDA" */}
@@ -65,7 +85,8 @@ export function AchievementCard({ achievement, isUnlocked }: Props) {
     )
   }
 
-  // Estado bloqueado
+  // Estado bloqueado — conquista secreta oculta título e emoji
+  const isSecret = secret === true
   return (
     <div style={{
       background: 'rgba(255,255,255,0.02)',
@@ -79,7 +100,7 @@ export function AchievementCard({ achievement, isUnlocked }: Props) {
       gap: 8,
       opacity: 0.6,
     }}>
-      {/* Emoji cinza */}
+      {/* Emoji — oculto se secreta */}
       <div style={{
         width: 48, height: 48, borderRadius: '50%',
         background: 'rgba(255,255,255,0.04)',
@@ -88,15 +109,15 @@ export function AchievementCard({ achievement, isUnlocked }: Props) {
         fontSize: 22, lineHeight: 1,
         filter: 'grayscale(1)',
       }}>
-        {emoji}
+        {isSecret ? '🔒' : emoji}
       </div>
 
       <div>
         <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(240,240,255,0.35)', margin: '0 0 4px', lineHeight: 1.3 }}>
-          {title}
+          {isSecret ? '????' : title}
         </p>
         <p style={{ fontSize: 10, color: 'rgba(240,240,255,0.22)', margin: 0, lineHeight: 1.4 }}>
-          🔒 {unlockHint}
+          {isSecret ? lockedHint : `🔒 ${lockedHint}`}
         </p>
       </div>
     </div>

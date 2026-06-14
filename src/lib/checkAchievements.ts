@@ -1,9 +1,13 @@
 import { prisma } from '@/lib/prisma'
-import { ACHIEVEMENTS, type UserStats } from '@/lib/achievements'
+import {
+  calculatePatientStats,
+  getUnlockedAchievements,
+  type AchievementId,
+} from '@/lib/achievements'
 
 export async function checkAchievements(anonymousId: string): Promise<{
-  unlockedIds: string[]
-  newlyUnlockedIds: string[]
+  unlockedIds: AchievementId[]
+  newlyUnlockedIds: AchievementId[]
 }> {
   const patient = await prisma.patient.findUnique({
     where: { anonymousId },
@@ -11,10 +15,10 @@ export async function checkAchievements(anonymousId: string): Promise<{
       id: true,
       achievements: true,
       sessions: {
-        where: { diagnosis: { isNot: null } },
         select: {
           diagnosis: {
             select: {
+              nivelDrama: true,
               certificate: {
                 select: {
                   rarity: true,
@@ -32,23 +36,9 @@ export async function checkAchievements(anonymousId: string): Promise<{
 
   if (!patient) return { unlockedIds: [], newlyUnlockedIds: [] }
 
-  const certs = patient.sessions
-    .map((s) => s.diagnosis?.certificate)
-    .filter((c): c is NonNullable<typeof c> => c != null)
+  const stats = calculatePatientStats(patient.sessions)
+  const earned = getUnlockedAchievements(stats) as AchievementId[]
 
-  const stats: UserStats = {
-    totalSessions: patient.sessions.length,
-    completedCertificates: certs.length,
-    maxCompatibilidadePaoQueijo: certs.reduce((m, c) => Math.max(m, c.compatibilidadePaoQueijo), 0),
-    maxChanceEstudarMadrugada: certs.reduce((m, c) => Math.max(m, c.chanceEstudarMadrugada), 0),
-    maxRiscoAdotarOutroCachorro: certs.reduce((m, c) => Math.max(m, c.riscoAdotarOutroCachorro), 0),
-    epicCertificates: certs.filter((c) => c.rarity === 'EPICO' || c.rarity === 'LENDARIO').length,
-    legendaryCertificates: certs.filter((c) => c.rarity === 'LENDARIO').length,
-    hasEpico: certs.some((c) => c.rarity === 'EPICO' || c.rarity === 'LENDARIO'),
-    hasLendario: certs.some((c) => c.rarity === 'LENDARIO'),
-  }
-
-  const earned = ACHIEVEMENTS.filter((a) => a.check(stats)).map((a) => a.id)
   const alreadyUnlocked = new Set(patient.achievements)
   const newlyUnlockedIds = earned.filter((id) => !alreadyUnlocked.has(id))
 
@@ -60,7 +50,7 @@ export async function checkAchievements(anonymousId: string): Promise<{
   }
 
   return {
-    unlockedIds: [...patient.achievements, ...newlyUnlockedIds],
+    unlockedIds: [...(patient.achievements as AchievementId[]), ...newlyUnlockedIds],
     newlyUnlockedIds,
   }
 }
