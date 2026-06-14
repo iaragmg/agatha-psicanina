@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { generateIndicators } from '@/lib/certificate-indicators'
+import { checkAchievements } from '@/lib/checkAchievements'
 
 const bodySchema = z.object({
   shareToken: z.string().min(1),
@@ -80,6 +81,10 @@ export async function POST(req: NextRequest) {
   const cert = await prisma.certificate.create({
     data: { diagnosisId: diagnosis.id, patientName, ...indicators },
   })
+
+  // Reconciliação de conquistas: fire-and-forget (não bloqueia a resposta)
+  const anonymousId = req.cookies.get('agatha_patient_id')?.value
+  if (anonymousId) checkAchievements(anonymousId).catch(console.error)
 
   return Response.json(buildResponse(cert))
 }

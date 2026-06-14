@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { ProntuarioClient, type ConsultaItem } from './ProntuarioClient'
 import { RARITY_META, type Rarity } from '@/lib/certificate-indicators'
+import { checkAchievements } from '@/lib/checkAchievements'
 
 export const metadata: Metadata = {
   title: 'Meu Prontuário PsiCanino | Agatha PsiCanina',
@@ -38,8 +39,6 @@ async function getHistorico(anonymousId: string): Promise<ConsultaItem[]> {
     if (!d) continue
 
     const cert = d.certificate
-
-    // Validação de raridade contra os valores do enum
     const validRarities: Rarity[] = ['COMUM', 'RARO', 'EPICO', 'LENDARIO']
     const rarity: Rarity = cert && validRarities.includes(cert.rarity as Rarity)
       ? (cert.rarity as Rarity)
@@ -84,8 +83,13 @@ export default async function ProntuarioPage() {
   const cookieStore = await cookies()
   const anonymousId = cookieStore.get('agatha_patient_id')?.value ?? null
 
-  const consultas = anonymousId ? await getHistorico(anonymousId) : []
-  const hasPatient = !!anonymousId
+  // Rodar as duas operações em paralelo: histórico + reconciliação de conquistas
+  const [consultas, achievements] = await Promise.all([
+    anonymousId ? getHistorico(anonymousId) : Promise.resolve([] as ConsultaItem[]),
+    anonymousId
+      ? checkAchievements(anonymousId).catch(() => ({ unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }))
+      : Promise.resolve({ unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }),
+  ])
 
   return (
     <main
@@ -95,7 +99,12 @@ export default async function ProntuarioPage() {
         fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
       }}
     >
-      <ProntuarioClient consultas={consultas} hasPatient={hasPatient} />
+      <ProntuarioClient
+        consultas={consultas}
+        hasPatient={!!anonymousId}
+        unlockedIds={achievements.unlockedIds}
+        newlyUnlockedIds={achievements.newlyUnlockedIds}
+      />
     </main>
   )
 }

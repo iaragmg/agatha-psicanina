@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { CertificateModal } from '@/components/certificate/CertificateModal'
 import type { CertificateData } from '@/components/certificate/CertificateCard'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
 import type { Rarity } from '@/lib/certificate-indicators'
+import { ACHIEVEMENTS } from '@/lib/achievements'
+import { AchievementsGrid } from '@/components/achievements/AchievementsGrid'
+import { AchievementToast } from '@/components/achievements/AchievementToast'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -40,6 +43,8 @@ export interface ConsultaItem {
 interface Props {
   consultas: ConsultaItem[]
   hasPatient: boolean
+  unlockedIds: string[]
+  newlyUnlockedIds: string[]
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -434,9 +439,14 @@ function EmptyState({ hasPatient }: { hasPatient: boolean }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function ProntuarioClient({ consultas, hasPatient }: Props) {
+export function ProntuarioClient({ consultas, hasPatient, unlockedIds, newlyUnlockedIds }: Props) {
   const [modalItem, setModalItem] = useState<ConsultaItem | null>(null)
   const [modalMode, setModalMode] = useState<'view' | 'generate'>('generate')
+
+  // Toast: exibir a conquista de maior prioridade recém-desbloqueada (primeira no catálogo)
+  const toastAchievement = ACHIEVEMENTS.find((a) => newlyUnlockedIds.includes(a.id)) ?? null
+  const [toastVisible, setToastVisible] = useState(true)
+  const dismissToast = useCallback(() => setToastVisible(false), [])
 
   function handleViewCert(item: ConsultaItem) {
     setModalMode('view')
@@ -522,6 +532,15 @@ export function ProntuarioClient({ consultas, hasPatient }: Props) {
           </>
         )}
 
+        {/* ── Conquistas ──────────────────────────────────────── */}
+        <div style={{
+          marginTop: 36,
+          paddingTop: 28,
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          <AchievementsGrid unlockedIds={unlockedIds} />
+        </div>
+
         {/* ── Rodapé ─────────────────────────────────────────── */}
         <div style={{ marginTop: 44, textAlign: 'center' }}>
           <a
@@ -551,6 +570,11 @@ export function ProntuarioClient({ consultas, hasPatient }: Props) {
           onClose={() => setModalItem(null)}
           initialCertificateData={modalInitialData}
         />
+      )}
+
+      {/* Toast de nova conquista */}
+      {toastAchievement && toastVisible && (
+        <AchievementToast achievement={toastAchievement} onDismiss={dismissToast} />
       )}
     </>
   )

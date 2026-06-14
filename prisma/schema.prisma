@@ -89,8 +89,10 @@ model Patient {
   updatedAt   DateTime  @updatedAt
 
   // Operador que vinculou este paciente (opcional para uso B2B)
-  createdById String?
-  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  achievements String[]  @default([])
 
   sessions Session[]
 

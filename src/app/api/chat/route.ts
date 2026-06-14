@@ -7,6 +7,7 @@ import { SENSITIVE_REDIRECT, SESSION_CONFIG } from '@/lib/constants'
 import { createMessageSchema } from '@/lib/validations/session'
 import { diagnosisJsonSchema, type DiagnosisJson } from '@/lib/validations/diagnosis'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { checkAchievements } from '@/lib/checkAchievements'
 
 // ─── Detecção de conteúdo sensível ───────────────────────────────────────────
 
@@ -124,7 +125,10 @@ export async function POST(req: NextRequest) {
   // 2. Carregar sessão + histórico completo
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
-    include: { messages: { orderBy: { turnNumber: 'asc' } } },
+    include: {
+      messages: { orderBy: { turnNumber: 'asc' } },
+      patient: { select: { anonymousId: true } },
+    },
   })
 
   if (!session) {
@@ -317,6 +321,10 @@ export async function POST(req: NextRequest) {
 
           savedShareToken = saved.shareToken
           console.log(`[/api/chat] Diagnosis persisted: shareToken=${savedShareToken}`)
+
+          // Reconciliação de conquistas: fire-and-forget
+          const anonymousId = session.patient?.anonymousId
+          if (anonymousId) checkAchievements(anonymousId).catch(console.error)
         } catch (dbErr) {
           console.error('[/api/chat] Erro na transação de diagnóstico:', dbErr)
         }
