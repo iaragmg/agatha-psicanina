@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server'
 import type { ResponseInput } from 'openai/resources/responses/responses'
 import { getOpenAIClient } from '@/lib/openai'
 import { prisma } from '@/lib/prisma'
-import { AGATHA_SYSTEM_PROMPT } from '@/lib/agatha-prompt'
+import { buildInstructions } from '@/lib/agatha-prompt'
+import { selectQuestionsForSession, countByCategory } from '@/lib/question-bank'
 import { SENSITIVE_REDIRECT, SESSION_CONFIG } from '@/lib/constants'
 import { createMessageSchema } from '@/lib/validations/session'
 import { diagnosisJsonSchema, type DiagnosisJson } from '@/lib/validations/diagnosis'
@@ -138,6 +139,20 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Sessão já encerrada.' }, { status: 409 })
   }
 
+  // Seleção determinística de perguntas para esta sessão (usa session.id como seed)
+  const selectedQuestions = selectQuestionsForSession(session.id)
+  const currentQuestion = selectedQuestions[session.questionCount] ?? null
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[question-bank] Perguntas selecionadas para sessão ${session.id}:`,
+      selectedQuestions.map((q, i) => `[${i}] ${q.id} — ${q.text.slice(0, 60)}`),
+    )
+    console.log(
+      `[question-bank] Turno atual: questionCount=${session.questionCount} → pergunta "${currentQuestion?.id ?? 'encerramento'}"`,
+    )
+  }
+
   console.log(
     `[/api/chat] sessionId=${sessionId} questionCount=${session.questionCount} MAX=${SESSION_CONFIG.MAX_QUESTIONS}`,
   )
@@ -219,16 +234,17 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Quando forçado, sobrescreve as instruções para garantir que o modelo
-  // emita APENAS o JSON de diagnóstico, sem fazer mais perguntas.
-  const instructions = isForcedClose
-    ? `${AGATHA_SYSTEM_PROMPT}\n\n` +
-      `⚠️ INSTRUÇÃO OBRIGATÓRIA: O limite de ${SESSION_CONFIG.MAX_QUESTIONS} perguntas foi atingido. ` +
-      `Você DEVE encerrar a entrevista AGORA. ` +
-      `Responda SOMENTE com o objeto JSON de diagnóstico final. ` +
-      `NÃO use markdown. NÃO use \`\`\`json. NÃO adicione texto antes ou depois. ` +
-      `Comece a resposta com { e termine com }.`
-    : AGATHA_SYSTEM_PROMPT
+  // Constrói instructions com pergunta atual injetada e, no encerramento,
+  // o resumo de temas abordados para enriquecer o diagnóstico.
+  const categoryCounts = isForcedClose
+    ? countByCategory(selectedQuestions.slice(0, session.questionCount))
+    : undefined
+
+  const instructions = buildInstructions({
+    currentQuestion: currentQuestion?.text,
+    isForcedClose,
+    categoryCounts,
+  })
 
   // 8. Streaming via OpenAI Responses API
   const stream = new ReadableStream({

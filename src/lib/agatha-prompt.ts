@@ -1,4 +1,5 @@
 import { AGATHA_CATCHPHRASES, SENSITIVE_REDIRECT, SESSION_CONFIG } from './constants'
+import type { QuestionCategory } from './question-bank'
 
 export const AGATHA_SYSTEM_PROMPT = `Você é Agatha PsiCanina, uma Shih Tzu preta e branca, de óculos redondos e gravata borboleta preta.
 
@@ -64,6 +65,53 @@ Regras do JSON:
 - fraseCompartilhavel deve ser memorável e levemente autodepreciativa (o usuário vai querer mandar para os amigos).
 - resumoAfetivo deve encerrar com carinho genuíno, mesmo com humor.
 - NUNCA inclua termos clínicos reais como diagnóstico.`
+
+const CATEGORY_LABEL: Record<QuestionCategory, string> = {
+  trabalho: 'trabalho',
+  relacionamentos: 'relacionamentos',
+  sonhos: 'sonhos e desejos',
+  habitos: 'hábitos',
+  comida: 'comida e conforto',
+  estudos: 'aprendizado',
+  emocoes: 'emoções',
+}
+
+/** Constrói o prompt final injetando a pergunta sugerida e, no fechamento,
+ *  o resumo de categorias abordadas. */
+export function buildInstructions(options: {
+  currentQuestion?: string
+  isForcedClose?: boolean
+  categoryCounts?: Partial<Record<QuestionCategory, number>>
+}): string {
+  const { currentQuestion, isForcedClose = false, categoryCounts } = options
+
+  let prompt = AGATHA_SYSTEM_PROMPT
+
+  if (currentQuestion && !isForcedClose) {
+    prompt +=
+      `\n\n━━━ SUGESTÃO DE PERGUNTA PARA ESTE TURNO ━━━\n` +
+      `"${currentQuestion}"\n` +
+      `(Adapte o texto à conversa se necessário, mas mantenha o tema central da pergunta.)`
+  }
+
+  if (isForcedClose) {
+    const breakdown = categoryCounts
+      ? Object.entries(categoryCounts)
+          .map(([cat, n]) => `${CATEGORY_LABEL[cat as QuestionCategory] ?? cat}: ${n}`)
+          .join(', ')
+      : ''
+
+    prompt +=
+      `\n\n⚠️ INSTRUÇÃO OBRIGATÓRIA: O limite de ${SESSION_CONFIG.MAX_QUESTIONS} perguntas foi atingido. ` +
+      `Você DEVE encerrar a entrevista AGORA. ` +
+      `Responda SOMENTE com o objeto JSON de diagnóstico final. ` +
+      `NÃO use markdown. NÃO use \`\`\`json. NÃO adicione texto antes ou depois. ` +
+      `Comece a resposta com { e termine com }.` +
+      (breakdown ? `\n\nTemas que você explorou nesta consulta: ${breakdown}.` : '')
+  }
+
+  return prompt
+}
 
 export function buildMessages(
   history: { role: 'user' | 'assistant'; content: string }[],
