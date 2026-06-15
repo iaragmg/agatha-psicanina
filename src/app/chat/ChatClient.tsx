@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import { useChatSession } from '@/hooks/useChatSession'
 import {
   ChatHeader,
@@ -12,6 +14,9 @@ import {
 import { SESSION_CONFIG } from '@/lib/constants'
 
 export function ChatClient() {
+  const { data: authSession } = useSession()
+  const isAnonymous = !authSession?.user?.id
+
   const {
     messages,
     isTyping,
@@ -57,6 +62,32 @@ export function ChatClient() {
         maxQuestions={SESSION_CONFIG.MAX_QUESTIONS}
         isTyping={isTyping}
       />
+
+      {/* Banner de conta — visível apenas para usuários anônimos */}
+      {isAnonymous && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 10, padding: '8px 16px',
+          background: 'rgba(201,168,76,0.07)',
+          borderBottom: '1px solid rgba(201,168,76,0.15)',
+          flexShrink: 0,
+        }}>
+          <p style={{ fontSize: 11, color: 'rgba(201,168,76,0.8)', margin: 0, lineHeight: 1.4 }}>
+            🍪 Sem conta — histórico salvo só neste navegador.
+          </p>
+          <Link
+            href="/register"
+            style={{
+              fontSize: 11, fontWeight: 700, color: '#0d0b1e',
+              background: 'linear-gradient(135deg, #e8c776, #c9a84c)',
+              padding: '5px 12px', borderRadius: 8,
+              textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            Criar conta
+          </Link>
+        </div>
+      )}
 
       {/* Área de mensagens */}
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
