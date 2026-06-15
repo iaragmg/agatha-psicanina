@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ProntuarioClient, type ConsultaItem } from './ProntuarioClient'
 import { RARITY_META, type Rarity } from '@/lib/certificate-indicators'
@@ -14,17 +15,31 @@ function formatCertNumber(n: number, date: Date): string {
   return `PSC-${date.getFullYear()}-${String(n).padStart(6, '0')}`
 }
 
-async function getHistorico(anonymousId: string): Promise<ConsultaItem[]> {
+// Resolve a identidade do visitante: userId (auth) tem prioridade sobre cookie (anônimo)
+async function resolvePatientIdentity(): Promise<
+  { kind: 'userId'; value: string } | { kind: 'anonymousId'; value: string } | null
+> {
+  const session = await auth()
+  if (session?.user?.id) return { kind: 'userId', value: session.user.id }
+
+  const cookieStore = await cookies()
+  const anonymousId = cookieStore.get('agatha_patient_id')?.value
+  if (anonymousId) return { kind: 'anonymousId', value: anonymousId }
+
+  return null
+}
+
+async function getHistorico(identity: { kind: string; value: string }): Promise<ConsultaItem[]> {
+  const where = identity.kind === 'userId'
+    ? { userId: identity.value }
+    : { anonymousId: identity.value }
+
   const patient = await prisma.patient.findUnique({
-    where: { anonymousId },
+    where,
     include: {
       sessions: {
         where: { diagnosis: { isNot: null } },
-        include: {
-          diagnosis: {
-            include: { certificate: true },
-          },
-        },
+        include: { diagnosis: { include: { certificate: true } } },
         orderBy: { startedAt: 'desc' },
       },
     },
@@ -79,15 +94,26 @@ async function getHistorico(anonymousId: string): Promise<ConsultaItem[]> {
   return items
 }
 
-export default async function ProntuarioPage() {
-  const cookieStore = await cookies()
-  const anonymousId = cookieStore.get('agatha_patient_id')?.value ?? null
+async function getAnonymousId(identity: { kind: string; value: string }): Promise<string | null> {
+  if (identity.kind === 'anonymousId') return identity.value
+  const patient = await prisma.patient.findUnique({
+    where: { userId: identity.value },
+    select: { anonymousId: true },
+  })
+  return patient?.anonymousId ?? null
+}
 
-  // Rodar as duas operações em paralelo: histórico + reconciliação de conquistas
+export default async function ProntuarioPage() {
+  const identity = await resolvePatientIdentity()
+
   const [consultas, achievements] = await Promise.all([
-    anonymousId ? getHistorico(anonymousId) : Promise.resolve([] as ConsultaItem[]),
-    anonymousId
-      ? checkAchievements(anonymousId).catch(() => ({ unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }))
+    identity ? getHistorico(identity) : Promise.resolve([] as ConsultaItem[]),
+    identity
+      ? getAnonymousId(identity).then((anonId) =>
+          anonId
+            ? checkAchievements(anonId).catch(() => ({ unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }))
+            : { unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }
+        )
       : Promise.resolve({ unlockedIds: [] as string[], newlyUnlockedIds: [] as string[] }),
   ])
 
@@ -101,7 +127,7 @@ export default async function ProntuarioPage() {
     >
       <ProntuarioClient
         consultas={consultas}
-        hasPatient={!!anonymousId}
+        hasPatient={!!identity}
         unlockedIds={achievements.unlockedIds}
         newlyUnlockedIds={achievements.newlyUnlockedIds}
       />

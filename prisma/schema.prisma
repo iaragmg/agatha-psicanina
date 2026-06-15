@@ -55,11 +55,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  // Sessões NextAuth (tabela separada de Session do chat)
+  accounts     Account[]
   authSessions AuthSession[]
-  // Pacientes cadastrados por este usuário
+  // Pacientes cadastrados por este usuário (B2B)
   patients     Patient[]
+  // Paciente próprio deste usuário (conta de usuário final)
+  patient      Patient?  @relation("UserOwnPatient")
 
   @@map("users")
 }
@@ -87,6 +88,10 @@ model Patient {
   ageRange    AgeRange?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  // Conta autenticada vinculada (quando usuário se registra)
+  userId      String?   @unique
+  user        User?     @relation("UserOwnPatient", fields: [userId], references: [id], onDelete: SetNull)
 
   // Operador que vinculou este paciente (opcional para uso B2B)
   createdById  String?

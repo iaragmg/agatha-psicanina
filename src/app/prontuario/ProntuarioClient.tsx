@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { CertificateModal } from '@/components/certificate/CertificateModal'
 import type { CertificateData } from '@/components/certificate/CertificateCard'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
@@ -706,23 +707,28 @@ function ConsultaCard({ item, onViewCert, onGenCert }: CardProps) {
 
 // ─── 6. Empty State ───────────────────────────────────────────────────────────
 
-function EmptyState() {
+function EmptyState({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       textAlign: 'center', padding: '56px 16px 40px', gap: 20,
     }}>
       <div style={{ fontSize: 72, lineHeight: 1, filter: 'drop-shadow(0 0 24px rgba(155,89,182,0.3))' }}>🐾</div>
-      <div style={{ maxWidth: 340 }}>
+      <div style={{ maxWidth: 360 }}>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0ff', margin: '0 0 10px' }}>
           Nenhum prontuário encontrado
         </h2>
         <p style={{ fontSize: 13, color: 'rgba(240,240,255,0.45)', margin: 0, lineHeight: 1.7 }}>
-          A Dra. Agatha ainda não teve a oportunidade de investigar
-          seu comportamento humano.<br />
-          <span style={{ color: 'rgba(201,168,76,0.7)' }}>O divã está esperando. 🛋️</span>
+          {isAuthenticated
+            ? <>A Dra. Agatha ainda não teve a oportunidade de investigar
+                seu comportamento humano.<br />
+                <span style={{ color: 'rgba(201,168,76,0.7)' }}>O divã está esperando. 🛋️</span></>
+            : <>Crie uma conta para salvar seu histórico em qualquer dispositivo.<br />
+                <span style={{ color: 'rgba(201,168,76,0.7)' }}>Ou consulte anonimamente — mas o histórico fica no cookie. 🍪</span></>
+          }
         </p>
       </div>
+
       <a
         href="/chat"
         style={{
@@ -736,6 +742,33 @@ function EmptyState() {
       >
         🛋️ Iniciar Primeira Consulta
       </a>
+
+      {!isAuthenticated && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', marginTop: 4 }}>
+          <a
+            href="/register"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', borderRadius: 14,
+              fontSize: 13, fontWeight: 700, color: '#0d0b1e',
+              background: 'linear-gradient(135deg, #e8c776, #c9a84c)',
+              textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(201,168,76,0.2)',
+            }}
+          >
+            🔑 Criar conta e salvar histórico
+          </a>
+          <a
+            href="/login"
+            style={{
+              fontSize: 12, color: 'rgba(74,144,217,0.8)',
+              textDecoration: 'none', fontWeight: 600,
+            }}
+          >
+            Já tenho conta → Entrar
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -743,6 +776,9 @@ function EmptyState() {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function ProntuarioClient({ consultas, hasPatient, unlockedIds, newlyUnlockedIds }: Props) {
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user?.id
+
   const [modalItem, setModalItem] = useState<ConsultaItem | null>(null)
   const [modalMode, setModalMode] = useState<'view' | 'generate'>('generate')
   const [search, setSearch] = useState('')
@@ -830,7 +866,7 @@ export function ProntuarioClient({ consultas, hasPatient, unlockedIds, newlyUnlo
 
         {/* ── Conteúdo ─────────────────────────────────────── */}
         {consultas.length === 0 ? (
-          <EmptyState />
+          <EmptyState isAuthenticated={isAuthenticated} />
         ) : (
           <>
             <DashboardSummary consultas={consultas} />
