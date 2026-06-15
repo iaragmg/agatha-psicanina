@@ -128,37 +128,77 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
         {/* ── Card capturável ───────────────────────────────────────── */}
         <DiagnosisResult ref={cardRef} diagnosis={diagnosis} shareToken={shareToken} />
 
-        {/* ── Separador ─────────────────────────────────────────────── */}
-        <div style={{
-          width: '100%', maxWidth: 520,
-          display: 'flex', alignItems: 'center', gap: 12,
-          margin: '28px 0 24px',
-        }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-          <span style={{ fontSize: 11, color: 'rgba(240,240,255,0.3)', whiteSpace: 'nowrap', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Compartilhe com o mundo
-          </span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-        </div>
-
-        {/* ── Botões ────────────────────────────────────────────────── */}
+        {/* ── Botões — hierarquia: 1º Nova Consulta, 2º Prontuário, 3º Compartilhar ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 520 }}>
 
-          {/* WhatsApp */}
-          <button
+          {/* 1º — Primário: Nova Consulta */}
+          <a
             className="btn-primary"
-            onClick={handleWhatsApp}
+            href="/chat"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               width: '100%', padding: '15px 20px',
               borderRadius: 16, border: 'none', cursor: 'pointer',
               fontSize: 15, fontWeight: 700, color: '#fff',
-              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-              boxShadow: '0 4px 24px rgba(37,211,102,0.25)',
+              background: 'linear-gradient(135deg, rgba(74,144,217,0.9) 0%, rgba(155,89,182,0.9) 100%)',
+              boxShadow: '0 4px 24px rgba(74,144,217,0.22)',
+              textDecoration: 'none',
               transition: 'all 0.18s ease',
             }}
           >
-            <span style={{ fontSize: 20 }}>💬</span>
+            <span style={{ fontSize: 20 }}>🔄</span>
+            Nova Consulta com a Agatha
+          </a>
+
+          {/* 2º — Secundário: Prontuário */}
+          <a
+            className="btn-secondary"
+            href="/prontuario"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', padding: '14px 20px',
+              borderRadius: 16,
+              border: '1.5px solid rgba(155,89,182,0.5)',
+              cursor: 'pointer',
+              fontSize: 14, fontWeight: 600,
+              color: 'rgba(195,155,211,0.95)',
+              background: 'rgba(155,89,182,0.07)',
+              textDecoration: 'none',
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <span style={{ fontSize: 18 }}>📚</span>
+            Meu Prontuário PsiCanino
+          </a>
+
+          {/* Separador: Compartilhe */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            margin: '6px 0 2px',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+            <span style={{ fontSize: 11, color: 'rgba(240,240,255,0.3)', whiteSpace: 'nowrap', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Compartilhe com o mundo
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+          </div>
+
+          {/* 3º — Terciárias agrupadas: WhatsApp */}
+          <button
+            className="btn-secondary"
+            onClick={handleWhatsApp}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', padding: '13px 20px',
+              borderRadius: 14,
+              border: '1px solid rgba(37,211,102,0.3)',
+              cursor: 'pointer',
+              fontSize: 14, fontWeight: 600, color: '#25D366',
+              background: 'rgba(37,211,102,0.07)',
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <span style={{ fontSize: 18 }}>💬</span>
             {wpState === 'sent' ? 'Abrindo WhatsApp...' : 'Compartilhar no WhatsApp'}
           </button>
 
@@ -168,18 +208,18 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             onClick={handleCopy}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              width: '100%', padding: '14px 20px',
-              borderRadius: 16,
-              border: '1px solid rgba(255,255,255,0.14)',
+              width: '100%', padding: '13px 20px',
+              borderRadius: 14,
+              border: `1px solid ${copyState === 'copied' ? 'rgba(39,174,96,0.4)' : 'rgba(255,255,255,0.12)'}`,
               cursor: 'pointer',
               fontSize: 14, fontWeight: 600,
-              color: copyState === 'copied' ? '#27ae60' : '#f0f0ff',
-              background: copyState === 'copied' ? 'rgba(39,174,96,0.1)' : 'rgba(255,255,255,0.04)',
+              color: copyState === 'copied' ? '#27ae60' : 'rgba(240,240,255,0.7)',
+              background: copyState === 'copied' ? 'rgba(39,174,96,0.08)' : 'rgba(255,255,255,0.04)',
               backdropFilter: 'blur(12px)',
               transition: 'all 0.18s ease',
             }}
           >
-            <span style={{ fontSize: 18 }}>{copyState === 'copied' ? '✅' : '📋'}</span>
+            <span style={{ fontSize: 16 }}>{copyState === 'copied' ? '✅' : '📋'}</span>
             {copyState === 'copied' ? 'Copiado! Vai mandar no grupo?' : 'Copiar diagnóstico'}
           </button>
 
@@ -190,26 +230,25 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             disabled={saveStatus === 'capturing'}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              width: '100%', padding: '14px 20px',
-              borderRadius: 16,
-              border: '1px solid rgba(255,255,255,0.14)',
+              width: '100%', padding: '13px 20px',
+              borderRadius: 14,
+              border: `1px solid ${saveStatus === 'done' ? 'rgba(39,174,96,0.4)' : saveStatus === 'error' ? 'rgba(231,76,60,0.4)' : 'rgba(255,255,255,0.12)'}`,
               cursor: saveStatus === 'capturing' ? 'not-allowed' : 'pointer',
               fontSize: 14, fontWeight: 600,
-              color: saveStatus === 'done' ? '#27ae60' : saveStatus === 'error' ? '#e74c3c' : '#f0f0ff',
-              background: 'rgba(255,255,255,0.04)',
+              color: saveStatus === 'done' ? '#27ae60' : saveStatus === 'error' ? '#e74c3c' : 'rgba(240,240,255,0.7)',
+              background: saveStatus === 'done' ? 'rgba(39,174,96,0.08)' : 'rgba(255,255,255,0.04)',
               backdropFilter: 'blur(12px)',
               transition: 'all 0.18s ease',
               opacity: saveStatus === 'capturing' ? 0.6 : 1,
             }}
           >
-            <span style={{ fontSize: 18 }}>
-              {saveStatus === 'done' ? '✅' : saveStatus === 'error' ? '❌' : '📸'}
+            <span style={{ fontSize: 16 }}>
+              {saveStatus === 'capturing' ? '⏳' : saveStatus === 'done' ? '✅' : saveStatus === 'error' ? '❌' : '📸'}
             </span>
             {saveLabel}
           </button>
 
-          {/* Certificado */}
-          <div style={{ height: 4 }} />
+          {/* Separador + Certificado */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             margin: '4px 0',
@@ -237,47 +276,6 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             <span style={{ fontSize: 20 }}>📜</span>
             Gerar Certificado Oficial
           </button>
-
-          {/* Separador + Nova consulta */}
-          <div style={{ height: 8 }} />
-
-          <a
-            className="btn-ghost"
-            href="/chat"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '13px',
-              borderRadius: 16,
-              border: '1px solid rgba(255,255,255,0.06)',
-              fontSize: 14, fontWeight: 600,
-              color: 'rgba(240,240,255,0.45)',
-              textDecoration: 'none',
-              transition: 'all 0.18s ease',
-              background: 'transparent',
-            }}
-          >
-            <span style={{ fontSize: 16 }}>🔄</span>
-            Nova consulta com a Agatha
-          </a>
-
-          <a
-            className="btn-ghost"
-            href="/prontuario"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '13px',
-              borderRadius: 14,
-              border: '1px solid rgba(255,255,255,0.06)',
-              color: 'rgba(240,240,255,0.35)',
-              fontSize: 13, fontWeight: 600,
-              textDecoration: 'none',
-              transition: 'all 0.18s ease',
-              background: 'transparent',
-            }}
-          >
-            <span style={{ fontSize: 16 }}>📚</span>
-            Meu Prontuário PsiCanino
-          </a>
         </div>
 
         {/* ── Rodapé ────────────────────────────────────────────────── */}
