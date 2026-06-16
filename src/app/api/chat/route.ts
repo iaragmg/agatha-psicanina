@@ -144,13 +144,14 @@ export async function POST(req: NextRequest) {
   const currentQuestion = selectedQuestions[session.questionCount] ?? null
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(
-      `[question-bank] Perguntas selecionadas para sessão ${session.id}:`,
-      selectedQuestions.map((q, i) => `[${i}] ${q.id} — ${q.text.slice(0, 60)}`),
-    )
-    console.log(
-      `[question-bank] Turno atual: questionCount=${session.questionCount} → pergunta "${currentQuestion?.id ?? 'encerramento'}"`,
-    )
+    console.log('[question-bank] sessionId:', session.id)
+    console.log('[question-bank] selected ids:', selectedQuestions.map((q) => q.id))
+    console.log('[question-bank] selected categories:', selectedQuestions.map((q) => q.category))
+    console.log('[question-bank] current index:', session.questionCount)
+    console.log('[question-bank] current question:', currentQuestion?.id, currentQuestion?.text)
+    if (!currentQuestion) {
+      console.warn('[question-bank] ⚠️ currentQuestion está undefined — verificar índice ou seleção')
+    }
   }
 
   console.log(
