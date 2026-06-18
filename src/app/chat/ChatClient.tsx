@@ -9,8 +9,8 @@ import {
   ChatBubble,
   ChatInput,
   DiagnosisCard,
-  TypingIndicator,
 } from '@/components/chat'
+import { AgathaLoading } from '@/components/ui/AgathaLoading'
 import { SESSION_CONFIG } from '@/lib/constants'
 
 export function ChatClient() {
@@ -111,7 +111,7 @@ export function ChatClient() {
         ))}
 
         {isTyping && messages[messages.length - 1]?.role !== 'bot' && (
-          <TypingIndicator />
+          <AgathaLoading />
         )}
 
         {/* Card de diagnóstico */}
