@@ -73,11 +73,8 @@ export default async function DiagnosisPage({ params }: Props) {
 
   return (
     <main
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0d0d1a 0%, #130d26 50%, #0d0d1a 100%)',
-        fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
-      }}
+      className="page-root"
+      style={{ fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}
     >
       <DiagnosisPageClient
         diagnosis={diagnosis}

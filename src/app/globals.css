@@ -3,34 +3,21 @@
 /* ─── Design tokens ────────────────────────────────────────────────────────── */
 
 :root {
-  /* Fundo — navy profundo inspirado na referência visual */
-  --bg-base:           #080e1a;
-  --bg-surface:        rgba(6, 12, 28, 0.72);
-  --bg-surface-hover:  rgba(6, 12, 28, 0.88);
+  --bg-base:          #080d1a;
+  --text-primary:     #f0f0ff;
+  --text-secondary:   rgba(240, 240, 255, 0.52);
+  --text-muted:       rgba(240, 240, 255, 0.32);
 
-  /* Bordas */
-  --border-glass:      rgba(255, 255, 255, 0.08);
-  --border-cyan:       rgba(0, 188, 212, 0.18);
-  --border-gold:       rgba(201, 168, 76, 0.22);
+  --accent-cyan:      #22d3ee;
+  --accent-cyan-dim:  rgba(34, 211, 238, 0.60);
+  --accent-blue:      #4a90d9;
+  --accent-purple:    #9b59b6;
+  --accent-gold:      #e8c776;
+  --accent-gold-dim:  rgba(201, 168, 76, 0.55);
 
-  /* Texto */
-  --text-primary:      #f0f0ff;
-  --text-secondary:    rgba(240, 240, 255, 0.50);
-  --text-muted:        rgba(240, 240, 255, 0.30);
-
-  /* Acentos */
-  --accent-cyan:       #22d3ee;
-  --accent-cyan-dim:   rgba(34, 211, 238, 0.65);
-  --accent-blue:       #4a90d9;
-  --accent-purple:     #9b59b6;
-  --accent-gold:       #e8c776;
-  --accent-gold-dim:   rgba(201, 168, 76, 0.55);
-
-  /* Glow */
-  --glow-cyan:         rgba(0, 188, 212, 0.18);
-  --glow-purple:       rgba(124, 58, 237, 0.18);
-  --glow-blue:         rgba(74, 144, 217, 0.22);
-  --glow-gold:         rgba(201, 168, 76, 0.20);
+  --border-glass:     rgba(255, 255, 255, 0.10);
+  --border-cyan:      rgba(0, 188, 212, 0.22);
+  --border-gold:      rgba(201, 168, 76, 0.24);
 }
 
 @theme inline {
@@ -44,81 +31,113 @@
 
 * { box-sizing: border-box; }
 
-html,
+html { min-height: 100vh; }
+
+/* ─── Fundo imersivo — replica esferas 3D de AmeiSiteAgatha.jpg ────────────── */
+
 body {
   min-height: 100vh;
   background-color: var(--bg-base);
   color: var(--text-primary);
-}
 
-/* ─── Fundo imersivo com esferas (inspirado em AmeiSiteAgatha.jpg) ─────────── */
-
-body {
   background-image:
-    /* Esfera teal/ciano — topo direito */
-    radial-gradient(ellipse 48% 40% at 88% 10%, rgba(0, 188, 212, 0.22) 0%, transparent 62%),
-    /* Esfera roxo-índigo — esquerda centro */
-    radial-gradient(ellipse 42% 52% at 6% 58%, rgba(124, 58, 237, 0.20) 0%, transparent 58%),
-    /* Esfera azul escura — fundo esquerdo */
-    radial-gradient(ellipse 32% 32% at 18% 90%, rgba(30, 58, 138, 0.28) 0%, transparent 52%),
-    /* Esfera índigo pequena — fundo direito */
-    radial-gradient(ellipse 22% 26% at 93% 78%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
-    /* Facho de luz ciano sutil — centro horizontal */
-    radial-gradient(ellipse 70% 6% at 50% 42%, rgba(0, 188, 212, 0.04) 0%, transparent 75%);
+    /* Esfera teal/ciano metálica — topo direito (grande, vívida) */
+    radial-gradient(ellipse 60% 55% at 92% 4%,
+      rgba(0, 210, 235, 0.32) 0%,
+      rgba(0, 140, 185, 0.14) 40%,
+      transparent 65%),
+
+    /* Esfera roxo-índigo — esquerda centro (grande, profunda) */
+    radial-gradient(ellipse 55% 65% at 0% 62%,
+      rgba(110, 40, 190, 0.38) 0%,
+      rgba(70, 20, 140, 0.18) 42%,
+      transparent 65%),
+
+    /* Esfera azul-escura pequena — fundo esquerdo */
+    radial-gradient(ellipse 28% 28% at 12% 92%,
+      rgba(30, 50, 160, 0.45) 0%,
+      rgba(20, 30, 100, 0.20) 50%,
+      transparent 70%),
+
+    /* Esfera índigo pequena — centro direito */
+    radial-gradient(ellipse 20% 22% at 96% 72%,
+      rgba(90, 70, 220, 0.20) 0%,
+      transparent 60%),
+
+    /* Facho de luz neon sutil — diagonal */
+    linear-gradient(
+      135deg,
+      transparent 48%,
+      rgba(0, 200, 225, 0.035) 52%,
+      transparent 56%
+    );
+
   background-attachment: fixed;
 }
 
-/* ─── Glassmorphism utilities ──────────────────────────────────────────────── */
+/* ─── Glassmorphism (exatamente como solicitado) ───────────────────────────── */
 
-/* Card padrão — navy escuro */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Variantes de destaque — apenas override de borda e glow */
+.glass-card-cyan {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 188, 212, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 28px rgba(0, 188, 212, 0.10);
+}
+
+.glass-card-gold {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(201, 168, 76, 0.30);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 28px rgba(201, 168, 76, 0.08);
+}
+
+/* Glass clássico (cards menores / legado) */
 .glass {
-  background: var(--bg-surface);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-/* Card com acento ciano */
-.glass-cyan {
-  background: var(--bg-surface);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border: 1px solid var(--border-cyan);
-  border-radius: 16px;
-  box-shadow: 0 0 28px rgba(0, 188, 212, 0.07);
-}
-
-/* Card forte — mais opaco, para destaque */
 .glass-strong {
-  background: rgba(6, 12, 28, 0.88);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* Card gold — para certificados e conquistas */
-.glass-gold {
-  background: var(--bg-surface);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border: 1px solid var(--border-gold);
-  border-radius: 16px;
-  box-shadow: 0 0 28px rgba(201, 168, 76, 0.08);
+/* ─── Page shell padrão ────────────────────────────────────────────────────── */
+
+.page-root {
+  min-height: 100vh;
+  /* Sem background — deixa body mostrar as esferas */
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  color: var(--text-primary);
 }
 
-/* ─── Glow helpers ─────────────────────────────────────────────────────────── */
-
-.glow-cyan   { box-shadow: 0 0 32px var(--glow-cyan); }
-.glow-purple { box-shadow: 0 0 32px var(--glow-purple); }
-.glow-blue   { box-shadow: 0 0 32px var(--glow-blue); }
-.glow-gold   { box-shadow: 0 0 32px var(--glow-gold); }
-
-/* ─── Texto com acento ciano ───────────────────────────────────────────────── */
+/* ─── Utilidades ────────────────────────────────────────────────────────────── */
 
 .text-cyan  { color: var(--accent-cyan); }
 .text-gold  { color: var(--accent-gold); }
+.text-muted { color: var(--text-muted);  }
 
 /* ─── Scrollbar ────────────────────────────────────────────────────────────── */
 
@@ -128,4 +147,4 @@ body {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 188, 212, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.25); }

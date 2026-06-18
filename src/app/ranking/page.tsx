@@ -2,6 +2,7 @@ export const revalidate = 60
 
 import Link from 'next/link'
 import type React from 'react'
+import { PageShell } from '@/components/layout/PageShell'
 import {
   getClinicStats,
   getTopArchetypes,
@@ -104,21 +105,13 @@ const C = {
 }
 
 const S = {
+  // Only layout props — visual styles come from glass-card / glass-card-cyan CSS classes
   card: {
-    background: C.cardBg,
-    border: `1px solid ${C.border}`,
-    borderRadius: 16,
     padding: '20px 22px',
-    backdropFilter: 'blur(20px)',
   } as React.CSSProperties,
 
   cardCyan: {
-    background: C.cardBg,
-    border: `1px solid ${C.borderCyan}`,
-    borderRadius: 16,
     padding: '20px 22px',
-    backdropFilter: 'blur(20px)',
-    boxShadow: '0 0 28px rgba(0,188,212,0.07)',
   } as React.CSSProperties,
 
   sectionLabel: {
@@ -147,11 +140,10 @@ function Section({ children, id }: { children: React.ReactNode; id?: string }) {
 function StatCard({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
   return (
     <div
+      className={accent ? 'glass-card-cyan' : 'glass-card'}
       style={{
         ...S.card,
         textAlign: 'center', flex: '1 1 130px',
-        border: accent ? `1px solid ${C.borderCyan}` : `1px solid ${C.border}`,
-        boxShadow: accent ? '0 0 20px rgba(0,188,212,0.08)' : 'none',
         position: 'relative', overflow: 'hidden',
       }}
     >
@@ -212,60 +204,8 @@ export default async function RankingPage() {
   const maxTopCount = topArchetypes[0]?.count ?? 1
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        padding: '0 16px 72px',
-        fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
-        color: '#f0f0ff',
-      }}
-    >
-      {/* ── Header branding ────────────────────────────────────── */}
-      <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 8px 0',
-        maxWidth: 760, margin: '0 auto 40px',
-      }}>
-        {/* Logo — topo esquerdo, estilo referência visual */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,188,212,0.2) 0%, rgba(124,58,237,0.2) 100%)',
-            border: '1.5px solid rgba(0,188,212,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 17,
-          }}>
-            🐾
-          </div>
-          <div>
-            <div style={{
-              fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em',
-              background: `linear-gradient(90deg, ${C.cyan}, rgba(195,155,211,0.9))`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              {TEXTS.brand}
-            </div>
-            <div style={{ fontSize: 9, color: C.labelGold, letterSpacing: '0.1em', fontWeight: 600 }}>
-              {TEXTS.brand_sub}
-            </div>
-          </div>
-        </div>
-
-        {/* Nav link */}
-        <Link
-          href="/"
-          style={{
-            fontSize: 12, color: 'rgba(34,211,238,0.6)',
-            textDecoration: 'none', letterSpacing: '0.02em',
-          }}
-        >
-          {TEXTS.nav}
-        </Link>
-      </header>
-
-      <div style={{ maxWidth: 760, margin: '0 auto' }}>
+    <PageShell backHref="/" backLabel={TEXTS.nav}>
+      <div>
 
         {/* ── Hero ──────────────────────────────────────────────── */}
         <Section>
@@ -339,11 +279,8 @@ export default async function RankingPage() {
                 return (
                   <div
                     key={a.name}
-                    style={{
-                      ...S.card,
-                      border: i === 0 ? `1px solid ${C.borderCyan}` : `1px solid ${C.border}`,
-                      boxShadow: i === 0 ? '0 0 20px rgba(0,188,212,0.08)' : 'none',
-                    }}
+                    className={i === 0 ? 'glass-card-cyan' : 'glass-card'}
+                    style={{ ...S.card }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#f0f0ff' }}>
@@ -387,12 +324,10 @@ export default async function RankingPage() {
               {rareArchetypes.map((a) => (
                 <div
                   key={a.name}
+                  className="glass-card-gold"
                   style={{
-                    ...S.card,
                     padding: '12px 16px',
-                    border: `1px solid ${C.borderGold}`,
                     display: 'flex', flexDirection: 'column', gap: 4,
-                    boxShadow: '0 0 16px rgba(201,168,76,0.06)',
                   }}
                 >
                   <span style={{ fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.labelGold }}>
@@ -423,11 +358,8 @@ export default async function RankingPage() {
               {paoDeQueijo.map((e, i) => (
                 <div
                   key={e.arquetipoCanino}
-                  style={{
-                    ...S.card,
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    border: i === 0 ? `1px solid ${C.borderGold}` : `1px solid ${C.border}`,
-                  }}
+                  className={i === 0 ? 'glass-card-gold' : 'glass-card'}
+                  style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 14 }}
                 >
                   <span style={{ fontSize: 20, minWidth: 28 }}>
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🥐'}
@@ -458,8 +390,8 @@ export default async function RankingPage() {
                 return (
                   <div
                     key={r.rarity}
+                    className="glass-card"
                     style={{
-                      ...S.card,
                       flex: '1 1 130px', textAlign: 'center',
                       border: `1px solid ${meta.color}30`,
                       boxShadow: `0 0 24px ${meta.color}12`,
@@ -500,7 +432,7 @@ export default async function RankingPage() {
                   : C.muted
 
                 return (
-                  <div key={`${d.arquetipoCanino}-${i}`} style={S.card}>
+                  <div key={`${d.arquetipoCanino}-${i}`} className="glass-card" style={S.card}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: d.fraseCompartilhavel ? 10 : 0 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f0ff' }}>
                         {i === 0 ? '🎭 ' : `${i + 1}. `}{d.arquetipoCanino}
@@ -542,10 +474,8 @@ export default async function RankingPage() {
             {insights.map((ins, i) => (
               <div
                 key={i}
-                style={{
-                  ...S.cardCyan,
-                  display: 'flex', alignItems: 'flex-start', gap: 14,
-                }}
+                className="glass-card-cyan"
+                style={{ ...S.cardCyan, display: 'flex', alignItems: 'flex-start', gap: 14 }}
               >
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{ins.emoji}</span>
                 <p style={{ margin: 0, fontSize: 14, color: 'rgba(240,240,255,0.75)', lineHeight: 1.7 }}>
@@ -570,11 +500,9 @@ export default async function RankingPage() {
               {topAchievements.map((a, i) => (
                 <div
                   key={a.id}
+                  className={i === 0 ? 'glass-card-gold' : 'glass-card'}
                   style={{
-                    ...S.card,
                     flex: '1 1 160px',
-                    border: i === 0 ? `1px solid ${C.borderGold}` : `1px solid ${C.border}`,
-                    boxShadow: i === 0 ? '0 0 24px rgba(201,168,76,0.10)' : 'none',
                     textAlign: 'center', padding: '18px 14px',
                   }}
                 >
@@ -593,16 +521,15 @@ export default async function RankingPage() {
 
         {/* ── CTA ───────────────────────────────────────────────── */}
         <section id="cta">
-          <div style={{
-            textAlign: 'center',
-            padding: '44px 28px',
-            background: `linear-gradient(145deg, rgba(0,188,212,0.06) 0%, rgba(124,58,237,0.10) 100%)`,
-            border: `1px solid ${C.borderCyan}`,
-            borderRadius: 20,
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 0 60px rgba(0,188,212,0.06)',
-            position: 'relative', overflow: 'hidden',
-          }}>
+          <div
+            className="glass-card-cyan"
+            style={{
+              textAlign: 'center',
+              padding: '44px 28px',
+              boxShadow: '0 0 60px rgba(0,188,212,0.06)',
+              position: 'relative', overflow: 'hidden',
+            }}
+          >
             {/* Glow decorativo */}
             <div style={{
               position: 'absolute', top: -60, right: -60,
@@ -649,6 +576,6 @@ export default async function RankingPage() {
         </section>
 
       </div>
-    </main>
+    </PageShell>
   )
 }
