@@ -134,7 +134,6 @@ export function DiagnosisPageClient({ diagnosis, shareToken, rarityData }: Props
         {/* ── Raridade relativa ─────────────────────────────────── */}
         <RarityBadge
           rarityData={rarityData}
-          shareToken={shareToken}
           arquetipoCanino={diagnosis.arquetipoCanino}
         />
 

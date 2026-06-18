@@ -54,6 +54,11 @@ export interface AchievementRank {
   count: number
 }
 
+export interface ArchetypeStatus {
+  title: string
+  description: string
+}
+
 export interface RarityResult {
   rarityScore: number
   archetypeCount: number
@@ -61,6 +66,44 @@ export interface RarityResult {
   label: string
   emoji: string
   color: string
+  title: string
+  description: string
+}
+
+export function getArchetypeStatus(percentage: number): ArchetypeStatus {
+  if (percentage === 100) {
+    return {
+      title: 'Lendário',
+      description:
+        'Você é um caso único na história desta clínica. A Dra. Agatha está cogitando publicar um artigo científico só sobre você.',
+    }
+  }
+  if (percentage >= 81) {
+    return {
+      title: 'Anomalia PsiCanina',
+      description:
+        'Você é um caso fascinante! Você faz parte de um grupo extremamente restrito que desafia os manuais da clínica.',
+    }
+  }
+  if (percentage >= 51) {
+    return {
+      title: 'Espécie Rara',
+      description:
+        'Opa! Alerta de perfil curioso. A Dra. Agatha teve que ajustar os óculos para te analisar melhor.',
+    }
+  }
+  if (percentage >= 26) {
+    return {
+      title: 'Observador Atento',
+      description:
+        'Você já apresenta traços interessantes. O diagnóstico já está em fase de aprofundamento.',
+    }
+  }
+  return {
+    title: 'Explorador Comum',
+    description:
+      'Um espécime perfeitamente dentro da média. A Dra. Agatha agradece por sua normalidade terapêutica.',
+  }
 }
 
 // ─── Totais gerais ────────────────────────────────────────────────────────────
@@ -286,23 +329,29 @@ export async function calculateRarityScore(archetype: string): Promise<RarityRes
   let emoji: string
   let color: string
 
-  if (rarityScore >= 99) {
-    label = 'Você é único no universo'
+  if (rarityScore === 100) {
+    label = 'Único no universo'
     emoji = '👑'
     color = '#e8c776'
-  } else if (rarityScore >= 85) {
-    label = 'Você é raríssimo'
+  } else if (rarityScore >= 81) {
+    label = 'Extremamente raro'
     emoji = '💜'
     color = '#c39bd3'
-  } else if (rarityScore >= 50) {
-    label = 'Você tem personalidade'
+  } else if (rarityScore >= 51) {
+    label = 'Acima da média'
     emoji = '💎'
     color = '#4a90d9'
+  } else if (rarityScore >= 26) {
+    label = 'Personalidade distinta'
+    emoji = '🔭'
+    color = '#5dade2'
   } else {
-    label = 'Você é um clássico'
+    label = 'Clássico da clínica'
     emoji = '🔮'
     color = '#8e99a4'
   }
 
-  return { rarityScore, archetypeCount, totalCertificates: total, label, emoji, color }
+  const { title, description } = getArchetypeStatus(rarityScore)
+
+  return { rarityScore, archetypeCount, totalCertificates: total, label, emoji, color, title, description }
 }
