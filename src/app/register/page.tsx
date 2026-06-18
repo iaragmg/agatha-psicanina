@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { BrandLogo } from '@/components/layout/BrandLogo'
 
 const TEXTS = {
   title:         'Abrir Prontuário',
@@ -80,7 +81,9 @@ export default function RegisterPage() {
         <div className="auth-card" style={{ width: '100%', maxWidth: 400 }}>
           {/* Branding */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🐾</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <BrandLogo width={160} showCrp={false} align="center" />
+            </div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#f0f0ff', margin: '0 0 8px' }}>
               {TEXTS.title}
             </h1>

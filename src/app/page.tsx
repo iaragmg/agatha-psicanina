@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { auth, signOut } from '@/lib/auth'
+import { BrandLogo } from '@/components/layout/BrandLogo'
 
 const TEXTS = {
   tag:         'Consultório PsiCanino',
@@ -43,13 +44,11 @@ export default async function Home() {
         boxShadow: '0 0 60px rgba(74,144,217,0.1), 0 0 100px rgba(155,89,182,0.06)',
         textAlign: 'center',
       }}>
-        {/* Avatar */}
-        <div style={{ fontSize: 64, marginBottom: 12, lineHeight: 1 }}>🐾</div>
+        {/* Logo */}
+        <div style={{ marginBottom: 20 }}>
+          <BrandLogo width={180} linkable={false} showCrp={false} align="center" />
+        </div>
 
-        {/* Título */}
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#f0f0ff', margin: '0 0 6px' }}>
-          {TEXTS.title}
-        </h1>
         <p style={{ fontSize: 13, color: 'rgba(240,240,255,0.45)', margin: '0 0 24px' }}>
           {TEXTS.subtitle}
         </p>
