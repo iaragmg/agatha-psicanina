@@ -171,6 +171,24 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
             Meu Prontuário PsiCanino
           </a>
 
+          {/* 3º — Terciário: Ranking */}
+          <a
+            href="/ranking"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '12px 20px',
+              borderRadius: 14,
+              border: '1px solid rgba(201,168,76,0.2)',
+              fontSize: 13, fontWeight: 600,
+              color: 'rgba(201,168,76,0.7)',
+              background: 'transparent',
+              textDecoration: 'none',
+            }}
+          >
+            <span>🏆</span>
+            Ver ranking da clínica
+          </a>
+
           {/* Separador: Compartilhe */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,

@@ -914,18 +914,32 @@ export function ProntuarioClient({ consultas, hasPatient, unlockedIds, newlyUnlo
 
         {/* ── Rodapé ────────────────────────────────────────── */}
         <div style={{ marginTop: 44, textAlign: 'center' }}>
-          <a
-            href="/chat"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '11px 22px', borderRadius: 13,
-              border: '1px solid rgba(255,255,255,0.07)',
-              color: 'rgba(240,240,255,0.38)', fontSize: 13, fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            🔄 Nova consulta com a Agatha
-          </a>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
+            <a
+              href="/chat"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '11px 22px', borderRadius: 13,
+                border: '1px solid rgba(255,255,255,0.07)',
+                color: 'rgba(240,240,255,0.38)', fontSize: 13, fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              🔄 Nova consulta com a Agatha
+            </a>
+            <a
+              href="/ranking"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '11px 22px', borderRadius: 13,
+                border: '1px solid rgba(201,168,76,0.2)',
+                color: 'rgba(201,168,76,0.6)', fontSize: 13, fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              🏆 Ver ranking da clínica
+            </a>
+          </div>
           <p style={{ fontSize: 10, color: 'rgba(240,240,255,0.18)', marginTop: 20, lineHeight: 1.7 }}>
             🐾 Agatha PsiCanina é entretenimento.<br />
             Não substitui psicologia ou veterinária de verdade.

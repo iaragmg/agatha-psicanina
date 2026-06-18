@@ -4,6 +4,7 @@ import { auth, signOut } from '@/lib/auth'
 const TEXTS = {
   tag:         'Consultório PsiCanino',
   title:       'Agatha PsiCanina',
+  btnRanking:  '🏆 Ranking da Clínica',
   subtitle:    'Shih Tzu · Especialista em Comportamento Humano Bizarro',
   disclaimer:  'Isto é entretenimento.',
   disclaimerDetail: 'Agatha não é psicóloga. Nenhum diagnóstico real será emitido. Se precisar de ajuda, ligue para o CVV:',
@@ -104,6 +105,21 @@ export default async function Home() {
               {TEXTS.btnProntuario}
             </Link>
 
+            <Link
+              href="/ranking"
+              style={{
+                display: 'block', width: '100%', padding: '11px',
+                borderRadius: 12,
+                border: '1px solid rgba(201,168,76,0.2)',
+                fontSize: 13, fontWeight: 600,
+                color: 'rgba(201,168,76,0.7)',
+                background: 'transparent',
+                textDecoration: 'none',
+              }}
+            >
+              {TEXTS.btnRanking}
+            </Link>
+
             <form
               action={async () => {
                 'use server'
@@ -181,6 +197,18 @@ export default async function Home() {
               }}
             >
               {TEXTS.btnLogin}
+            </Link>
+
+            <Link
+              href="/ranking"
+              style={{
+                fontSize: 12, fontWeight: 600,
+                color: 'rgba(201,168,76,0.55)',
+                textDecoration: 'none',
+                marginTop: 4,
+              }}
+            >
+              {TEXTS.btnRanking}
             </Link>
           </div>
         )}
