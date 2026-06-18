@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { calculateRarityScore } from '@/lib/ranking-analytics'
 import { DiagnosisPageClient } from './DiagnosisPageClient'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
 
@@ -52,9 +53,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DiagnosisPage({ params }: Props) {
   const { token } = await params
-  const d = await getDiagnosis(token)
+  const [d, ] = await Promise.all([getDiagnosis(token)])
 
   if (!d) notFound()
+
+  // Rarity calculado server-side para não expor a lógica ao cliente
+  const rarityData = await calculateRarityScore(d.arquetipoCanino)
 
   const diagnosis: DiagnosisPayload = {
     tipo: 'diagnostico',
@@ -75,7 +79,11 @@ export default async function DiagnosisPage({ params }: Props) {
         fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
       }}
     >
-      <DiagnosisPageClient diagnosis={diagnosis} shareToken={d.shareToken} />
+      <DiagnosisPageClient
+        diagnosis={diagnosis}
+        shareToken={d.shareToken}
+        rarityData={rarityData}
+      />
     </main>
   )
 }

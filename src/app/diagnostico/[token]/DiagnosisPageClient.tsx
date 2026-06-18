@@ -3,12 +3,15 @@
 import { useState } from 'react'
 import { DiagnosisResult } from '@/components/diagnosis/DiagnosisResult'
 import { CertificateModal } from '@/components/certificate/CertificateModal'
+import { RarityBadge } from '@/components/ranking/RarityBadge'
 import { useSaveImage } from '@/hooks/useSaveImage'
 import type { DiagnosisPayload } from '@/hooks/useChatSession'
+import type { RarityResult } from '@/lib/ranking-analytics'
 
 interface Props {
   diagnosis: DiagnosisPayload
   shareToken: string
+  rarityData: RarityResult
 }
 
 function buildShareText(diagnosis: DiagnosisPayload, url: string): string {
@@ -28,7 +31,7 @@ function buildShareText(diagnosis: DiagnosisPayload, url: string): string {
   )
 }
 
-export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
+export function DiagnosisPageClient({ diagnosis, shareToken, rarityData }: Props) {
   const { cardRef, status: saveStatus, saveImage } = useSaveImage()
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const [wpState, setWpState] = useState<'idle' | 'sent'>('idle')
@@ -127,6 +130,13 @@ export function DiagnosisPageClient({ diagnosis, shareToken }: Props) {
 
         {/* ── Card capturável ───────────────────────────────────────── */}
         <DiagnosisResult ref={cardRef} diagnosis={diagnosis} shareToken={shareToken} />
+
+        {/* ── Raridade relativa ─────────────────────────────────── */}
+        <RarityBadge
+          rarityData={rarityData}
+          shareToken={shareToken}
+          arquetipoCanino={diagnosis.arquetipoCanino}
+        />
 
         {/* ── Botões — hierarquia: 1º Nova Consulta, 2º Prontuário, 3º Compartilhar ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 520 }}>

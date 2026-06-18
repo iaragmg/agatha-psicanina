@@ -54,6 +54,15 @@ export interface AchievementRank {
   count: number
 }
 
+export interface RarityResult {
+  rarityScore: number
+  archetypeCount: number
+  totalCertificates: number
+  label: string
+  emoji: string
+  color: string
+}
+
 // ─── Totais gerais ────────────────────────────────────────────────────────────
 
 export async function getClinicStats(): Promise<ClinicStats> {
@@ -257,4 +266,43 @@ export async function getTopAchievements(n = 6): Promise<AchievementRank[]> {
       count: Number(r.count),
     }
   })
+}
+
+// ─── Raridade relativa do arquétipo ──────────────────────────────────────────
+
+export async function calculateRarityScore(archetype: string): Promise<RarityResult> {
+  const [total, archetypeCount] = await Promise.all([
+    prisma.certificate.count(),
+    prisma.diagnosis.count({
+      where: { certificate: { isNot: null }, arquetipoCanino: archetype },
+    }),
+  ])
+
+  // Se não há certificados ainda, o usuário é o único — 100% raro
+  const rarityScore =
+    total === 0 ? 100 : Math.round((1 - archetypeCount / total) * 100)
+
+  let label: string
+  let emoji: string
+  let color: string
+
+  if (rarityScore >= 99) {
+    label = 'Você é único no universo'
+    emoji = '👑'
+    color = '#e8c776'
+  } else if (rarityScore >= 85) {
+    label = 'Você é raríssimo'
+    emoji = '💜'
+    color = '#c39bd3'
+  } else if (rarityScore >= 50) {
+    label = 'Você tem personalidade'
+    emoji = '💎'
+    color = '#4a90d9'
+  } else {
+    label = 'Você é um clássico'
+    emoji = '🔮'
+    color = '#8e99a4'
+  }
+
+  return { rarityScore, archetypeCount, totalCertificates: total, label, emoji, color }
 }
