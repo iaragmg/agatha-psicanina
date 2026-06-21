@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 interface Props {
-  /** Tamanho do logo em px (largura). Padrão: 160 */
+  /** Largura do logo em px. Padrão: 160 */
   width?: number
   /** Se false, não envolve em link para home */
   linkable?: boolean
@@ -14,7 +14,7 @@ interface Props {
 
 /**
  * Única fonte de verdade para o logo Agatha PsiCanina.
- * Renderiza exclusivamente a partir de /public/logo-agatha.png.
+ * Renderiza exclusivamente a partir de /public/logo-agatha-psicanina.png.
  */
 export function BrandLogo({
   width = 160,
@@ -22,8 +22,6 @@ export function BrandLogo({
   showCrp = true,
   align = 'left',
 }: Props) {
-  const height = Math.round(width * 0.42) // proporção aproximada do arquivo
-
   const inner = (
     <div
       style={{
@@ -33,20 +31,25 @@ export function BrandLogo({
         gap: 4,
       }}
     >
-      {/* Logo image com glow roxo suave */}
+      {/* Wrapper com glow — não interfere no layout do Image */}
       <div
         style={{
           filter: 'drop-shadow(0 0 10px rgba(139,92,246,0.45)) drop-shadow(0 0 3px rgba(34,211,238,0.20))',
-          lineHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
         }}
       >
         <Image
-          src="/logo-agatha.png"
+          src="/logo-agatha-psicanina.png"
           alt="Agatha PsiCanina"
           width={width}
-          height={height}
+          height={width}          /* next/image precisa de height; aspect ratio corrigido via CSS */
           priority
-          style={{ width, height: 'auto', display: 'block' }}
+          style={{
+            width,
+            height: 'auto',       /* mantém proporção real do arquivo */
+            display: 'block',
+          }}
         />
       </div>
 
